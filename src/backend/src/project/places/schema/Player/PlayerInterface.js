@@ -1,16 +1,16 @@
 // @flow
 
-import sqltag from 'common/sql-template-tag';
-import { query } from '../database.js';
-import type {PlayerSQL} from "./PlayerSQL.js";
+import sqltag from 'common/sql-template-tag'
+import { query } from '../database.js'
+import type { PlayerSQL } from './PlayerSQL.js'
 
 export default class PlayerInterface {
   static async getPlayerData(username: string): Promise<?PlayerSQL> {
     const sql = sqltag`
       SELECT * FROM Player WHERE username = ${username};
-    `;
-    const rows = await query(sql);
-    return rows[0];
+    `
+    const rows = await query(sql)
+    return rows[0]
   }
 
   static async insertPlayer(
@@ -18,10 +18,10 @@ export default class PlayerInterface {
     status: string,
     color: string,
     secret: string,
-    position: string,
-    look_direction: string,
-    statusMetadata: string,
-    memoryMetadata: string,
+    position: Array<number>, // integer [x, y, z]
+    lookDirection: Array<number>, // integer degrees [rh xy angle, -90/90 azimuth]
+    statusMetadata: { [string]: string },
+    memoryMetadata: { [string]: string },
     initialSetupConversation: string,
   ): Promise<void> {
     const sql = sqltag`
@@ -31,7 +31,7 @@ export default class PlayerInterface {
         color,
         secret,
         position,
-        look_direction,
+        lookDirection,
         statusMetadata,
         memoryMetadata,
         initialSetupConversation
@@ -40,14 +40,14 @@ export default class PlayerInterface {
         ${status},
         ${color},
         ${secret},
-        ${position},
-        ${look_direction},
-        ${statusMetadata},
-        ${memoryMetadata},
+        ${JSON.stringify(position)},
+        ${JSON.stringify(lookDirection)},
+        ${JSON.stringify(statusMetadata)},
+        ${JSON.stringify(memoryMetadata)},
         ${initialSetupConversation}
       );
-    `;
-    await query(sql);
+    `
+    await query(sql)
   }
 
   static async updatePlayerPosition(
@@ -59,25 +59,36 @@ export default class PlayerInterface {
       UPDATE Player
       SET position = ${position}, look_direction = ${look_direction}
       WHERE username = ${username};
-    `;
-    await query(sql);
+    `
+    await query(sql)
   }
 
-  static async updatePlayerMetadata(
+  static async updateStatusMetadata(
     username: string,
-    statusMetadata: string,
-    memoryMetadata: string,
+    statusMetadata: { [string]: string },
   ): Promise<void> {
     const sql = sqltag`
       UPDATE player
-      SET statusMetadata = ${statusMetadata}, memoryMetadata = ${memoryMetadata}
+      SET statusMetadata = ${JSON.stringify(statusMetadata)}
       WHERE username = ${username};
-    `;
-    await query(sql);
+    `
+    await query(sql)
+  }
+
+  static async updateMemoryMetadata(
+    username: string,
+    memoryMetadata: { [string]: string },
+  ): Promise<void> {
+    const sql = sqltag`
+      UPDATE player
+      SET memoryMetadata = ${JSON.stringify(memoryMetadata)}
+      WHERE username = ${username};
+    `
+    await query(sql)
   }
 
   static async truncateTable(): Promise<void> {
-    const sql = sqltag`DELETE FROM player;`;
-    await query(sql);
+    const sql = sqltag`DELETE FROM player;`
+    await query(sql)
   }
 }

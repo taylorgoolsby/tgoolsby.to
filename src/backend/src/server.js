@@ -9,10 +9,10 @@
 import express from 'express'
 import fileUpload from 'express-fileupload'
 import cors from 'cors'
-import {default as setupPlaces} from './project/places/setup.js'
-import createWebRouter from "./createWebRouter.js";
+import { default as setupPlaces } from './project/places/setup.js'
+import createWebRouter from './createWebRouter.js'
 import tld from 'tldjs'
-import http from "http";
+import http from 'http'
 
 const app: any = express()
 
@@ -21,10 +21,10 @@ app.use(express.json())
 app.use(fileUpload())
 
 app.use((req, res, next) => {
-  const parsed = tld.parse(req.headers.host);
-  req.subdomain = parsed.subdomain;
-  next();
-});
+  const parsed = tld.parse(req.headers.host)
+  req.subdomain = parsed.subdomain
+  next()
+})
 
 app.use(function (req, res, next) {
   const timestamp = Date.now()
@@ -96,5 +96,5 @@ app.use((req, res, next) => {
   })
 })
 
-const server = http.createServer(app);
+const server: any = http.createServer(app)
 export default server

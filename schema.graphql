@@ -1,0 +1,58 @@
+schema {
+  query: Query
+}
+
+directive @sql(unicode: Boolean, auto: Boolean, default: String, index: Boolean, nullable: Boolean, primary: Boolean, type: String, unique: Boolean, generated: String, constraints: String) on OBJECT | FIELD_DEFINITION
+
+directive @id(from: [String], name: String) on OBJECT
+
+directive @private on OBJECT | FIELD_DEFINITION
+
+directive @pagination on FIELD_DEFINITION
+
+scalar JSON
+
+type Player {
+  playerId: Int @sql(type: "INT", primary: true, auto: true)
+  username: String @sql(type: "VARCHAR(25)")
+  status: String @sql(type: "VARCHAR(50)")
+  color: String @sql(type: "VARCHAR(7)")
+  secret: String @sql(type: "VARCHAR(50)")
+  position: JSON @sql(type: "TEXT")
+  lookDirection: JSON @sql(type: "TEXT")
+  statusMetadata: JSON @sql(type: "TEXT", default: "'{}'")
+  memoryMetadata: JSON @sql(type: "TEXT", default: "'{}'")
+  initialSetupConversation: String @sql(type: "TEXT")
+  dateUpdated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
+  dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
+}
+
+type Description {
+  descriptionId: Int @sql(type: "INTEGER", primary: true, auto: true)
+  position: JSON @sql(type: "TEXT")
+  lookDirection: JSON @sql(type: "TEXT")
+  description: String @sql(type: "TEXT")
+  embedding: JSON @sql(type: "TEXT")
+  dateUpdated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
+  dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
+}
+
+type Error {
+  errorId: Int @sql(type: "INTEGER", primary: true, auto: true)
+  message: String @sql(type: "TEXT")
+  aiMessage: String @sql(type: "TEXT", nullable: true)
+  dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
+}
+
+type Version {
+  version: String @sql(type: "VARCHAR(10)", primary: true)
+  stage: String @sql(type: "VARCHAR(30)", primary: true)
+  isMigrated: Boolean @sql(default: "FALSE")
+  migrationScript: String @sql(type: "TEXT", nullable: true)
+  dateUpdated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
+  dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
+}
+
+type Query {
+  viewer: Int
+}

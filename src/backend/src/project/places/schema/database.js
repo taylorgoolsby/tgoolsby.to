@@ -1,8 +1,8 @@
 // @flow
 
-import { format } from "../utils/SqlString.js";
+import { format } from '../utils/SqlString.js'
 
-let db = null
+let db: any = null
 
 export function setDB(instance: any) {
   db = instance
@@ -36,43 +36,43 @@ export async function query(queryObject: {
 }): any {
   try {
     if (!db) {
-      console.error('Database not initialized');
-      return;
+      console.error('Database not initialized')
+      return
     }
 
-    const sql = flattenSql(queryObject);
+    const sql = flattenSql(queryObject)
 
     console.log('sql', sql)
 
     if (typeof window !== 'undefined') {
       // Browser environment
-      const stmt = db.prepare(sql);
-      stmt.bind(queryObject.values);
-      const result = [];
+      const stmt = db.prepare(sql)
+      stmt.bind(queryObject.values)
+      const result = []
       while (stmt.step()) {
-        result.push(stmt.getAsObject());
+        result.push(stmt.getAsObject())
       }
-      stmt.free();
-      return result;
+      stmt.free()
+      return result
     } else {
       // Node.js environment
-      const results = await db.all(sql);
+      const results = await db.all(sql)
       console.log('results', results)
       if (sql.startsWith('SELECT')) {
-        return results;
+        return results
       } else {
-        return results;
+        return results
       }
     }
   } catch (error) {
-    console.error('Error executing query:', error);
-    throw error;
+    console.error('Error executing query:', error)
+    throw error
   }
 }
 
 const database = {
   query,
-  db
+  db,
 }
 
 export default database

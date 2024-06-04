@@ -6,10 +6,10 @@ export type PlayerSQL = {
   color: string,
   secret: string,
   position: string,
-  look_direction: string,
+  lookDirection: string,
   statusMetadata: string,
   memoryMetadata: string,
   initialSetupConversation: string,
   dateUpdated: string,
   dateCreated: string,
-};
+}

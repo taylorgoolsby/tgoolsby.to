@@ -1,14 +1,32 @@
 // @flow
 
-import sqltag from 'common/sql-template-tag';
-import { query } from '../database.js';
-import type {DescriptionSQL} from "./DescriptionSQL.js";
+import sqltag from 'common/sql-template-tag'
+import { query } from '../database.js'
+import type { DescriptionSQL } from './DescriptionSQL.js'
 
 export default class DescriptionInterface {
-  static async storeTextDescription(position, look_direction, description) {
+  static async storeTextDescription(
+    position: Array<number>,
+    lookDirection: Array<number>,
+    description: string,
+  ): Promise<void> {
     const sql = sqltag`
-      INSERT INTO description (position, look_direction, description) VALUES (${JSON.stringify(position)}, ${JSON.stringify(look_direction)}, ${description});
-    `;
-    await query(sql);
+      INSERT INTO description (
+        positionX,
+        positionY, 
+        positionZ,  
+        lookDirectionAngle,
+        lookDirectionAzimuth,
+        description
+      ) VALUES (
+        ${position[0]},
+        ${position[1]},
+        ${position[2]}, 
+        ${lookDirection[0]},
+        ${lookDirection[1]}, 
+        ${description}
+      );
+    `
+    await query(sql)
   }
 }

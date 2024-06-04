@@ -1,13 +1,13 @@
 // @flow
 
-import sqltag from 'common/sql-template-tag';
-import { query } from '../database.js';
+import sqltag from 'common/sql-template-tag'
+import { query } from '../database.js'
 
 export default class ErrorInterface {
-  static async logError(error_message) {
+  static async logError(message: string, aiMessage: ?string) {
     const sql = sqltag`
-      INSERT INTO error (message) VALUES (${error_message});
-    `;
-    await query(sql);
+      INSERT INTO error (message, aiMessage) VALUES (${message}, ${aiMessage});
+    `
+    await query(sql)
   }
 }

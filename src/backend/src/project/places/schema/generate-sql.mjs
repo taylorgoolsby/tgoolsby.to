@@ -6,6 +6,7 @@ import fs from 'fs';
 import * as Player from './Player/PlayerSchema.mjs';
 import * as Description from './Description/DescriptionSchema.mjs';
 import * as Error from './Error/ErrorSchema.mjs';
+import * as Message from './Message/MessageSchema.mjs'
 import * as Version from './Version/VersionSchema.mjs';
 
 import path from 'path'
@@ -41,6 +42,7 @@ const typeDefs = gql`
   ${Player.typeDefs}
   ${Description.typeDefs}
   ${Error.typeDefs}
+  ${Message.typeDefs}
   ${Version.typeDefs}
 `;
 

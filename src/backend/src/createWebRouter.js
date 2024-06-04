@@ -2,12 +2,13 @@
 
 import express from 'express'
 import path from 'path'
-import {fileURLToPath} from "url";
-import fs from "fs";
+import { fileURLToPath } from 'url'
+import fs from 'fs'
+// $FlowFixMe
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export default function createWebRouter(app, webFolderName) {
+export default function createWebRouter(app: any, webFolderName: any): any {
   const router = express.Router()
 
   app.use((req, res, next) => {
@@ -21,15 +22,17 @@ export default function createWebRouter(app, webFolderName) {
     }
   })
 
-  const webPath = path.resolve(__dirname, process.env.NODE_ENV === 'production' ? `../../${webFolderName}/dist` : `../../../../${webFolderName}/dist`)
+  const webPath = path.resolve(
+    __dirname,
+    process.env.NODE_ENV === 'production'
+      ? `../../${webFolderName}/dist`
+      : `../../../../${webFolderName}/dist`,
+  )
 
   router.use(express.static(webPath))
 
   router.get('/*', (req, res) => {
-    const completedPath = path.resolve(
-      webPath,
-      '.' + req.path + '.html',
-    )
+    const completedPath = path.resolve(webPath, '.' + req.path + '.html')
 
     let usedPath = completedPath
     if (!fs.existsSync(completedPath)) {

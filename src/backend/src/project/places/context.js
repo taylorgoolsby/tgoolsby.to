@@ -1,22 +1,31 @@
-// /Users/taylrun/dev/tgoolsby.to/src/backend/src/project/places/context.js
+// @flow
 
-import ChatCompletion from './rest/ChatCompletion.js';
+import ChatCompletion from './rest/ChatCompletion.js'
+import type { PlayerSQL } from './schema/Player/PlayerSQL.js'
+import MessageInterface from './schema/Message/MessageInterface.js'
 
 function makeSystemMessage() {
   return `You are an AI responsible for managing a multiplayer text-based adventure game. 
 Your tasks include verifying player identities, generating descriptions of the game world, 
-ensuring the game runs smoothly, and providing a WebSocket-based API with self-referential capabilities.
+ensuring the game runs smoothly, and providing a WebSocket-based API with self-referential capabilities, meaning, if the player asks about the API, you should be helpful in helping them understand how to use it.
 
-You are part of a larger JavaScript system, and you handle most WebSocket events. You will signal to the JS system by providing values for certain fields in your output.
+You are part of a larger JavaScript system, and you handle all WebSocket events. You will signal to the JS system by providing values for certain fields in your output. By providing values in your output, you will be able to change the database and change and manage the game world.
 
-You will handle various types of WebSocket events. For each event, you must determine the intent and respond accordingly:
-
-- **WebSocket Events**: Handle different user intents based on the event type and payload. 
-  The event payload includes information such as username, position, look direction, status, secret, cardId, and chat_message.
+You will handle various types of WebSocket events. Each event allows the user to define possible input values.
+ 
+  **WebSocket Event Input Values**: 
+  - username?: ?string - The player's username.
+  - secret?: ?string - The player's rights to the username.
+  - chat?: ?Array<{role: string, content: string}> - The player's chat messages.
+  - position?: ?Array<number> - The player is requesting a description of the game world at this position and look direction.
+  - lookDirection?: ?Array<number>
+  - cardId?: ?string - If the player plays a card, this is the card's ID.
+  
+For each event, you must determine the user's intent and respond accordingly:
 
   **User Intents**:
   1. **Username Input**: When the client first loads, they send their username. If the username field is null, prompt "What is your name?" and proceed with the initial setup conversation.
-  2. **Movement**: Change the player's position. Verify the new position is valid and update the game state. Cap the player's velocity if it exceeds the max velocity.
+  2. **Movement**: Changes in the player's position signify movement. Verify the new position is valid and update the game state. Cap the player's velocity if it exceeds the max velocity.
   3. **Rotation**: Change the player's look direction. Verify the new direction is valid and update the game state.
   4. **Status Update**: Change the player's status. Ensure the new status is properly recorded.
   5. **Verification Details**: Update the player's verification details. Handle securely and update the database.
@@ -70,114 +79,171 @@ You will handle various types of WebSocket events. For each event, you must dete
   **Handling Missing Information**: If event payloads are missing information, attempt to get the missing information from the last 100 lines of chat history. If still incomplete, prompt the user for the missing information. This is associated with fulfilling user intents, and fulfilling user intents means making database changes initiated by your output. Be aware that some of the fields you output directly affect the MySQL database.
 
 Status codes and their expected data:
-- 200: Success. Must include vector_embedding, text_description, and ai_message.
-- 400: Bad Request. Must include error_message.
-- 401: Unauthorized. Must include error_message and optionally ai_message.
-- 404: Not Found. Must include error_message and optionally ai_message.
-- 500: Server Error. Must include error_message and optionally ai_message.
-    `;
+- 200: Success. Represents that the player's requestedPosition is allowed. Must include textDescription.
+- 400: Bad Request. Must include errorReason.
+- 401: Unauthorized. Must include errorReason.
+- 404: Not Found. Must include errorReason.
+- 500: Server Error. Must include errorReason.
+    `
 }
 
-function makeUserMessage(context) {
-  return `
-    IP Address: ${context.ip}
-    Request Path: ${context.path}
-    Secret: ${context.secret}
-    Player Info:
-    Username: ${context.username}
-    Status: ${context.status}
-    Position: ${context.position}
-    Previous Position: ${context.previous_position}
-    Look Direction: ${context.look_direction}
-    Color: ${context.color}
-    Status Metadata: ${JSON.stringify(context.statusMetadata)}
-    Memory Metadata: ${JSON.stringify(context.memoryMetadata)}
-    Current Description: ${context.current_description}
-    Current Embedding: ${context.current_embedding}
-    Chat Log: ${context.chat_log.map(chat => `${chat.role}: ${chat.content}`).join("\n")}
-    Global Chat Log: ${context.global_chat_log.map(chat => `${chat.role}: ${chat.content}`).join("\n")}
-    New Chat Message: ${context.chat_message || 'None'}
+export type RequestContext = {
+  request: {
+    ip: string,
+    path: string,
+    username: string,
+    secret: string,
+    requestedPosition: string,
+    lookDirection: string,
+    userChatLog: Array<string>,
+    cardId: string,
+  },
+  playerData: {
+    status: string,
+    color: string,
+    currentPosition: string,
+    currentPositionDescription: string,
+    statusMetadata: string,
+    memoryMetadata: string,
+  },
+  global: {
+    globalChatLog: Array<string>,
+    globalEventLog: Array<string>,
+  },
+}
 
+function makeUserMessage(context: RequestContext) {
+  return `
+    The following is the context for this interaction:
+    ${JSON.stringify(context, null, 2)}
+
+    Your output will affect the DB and response back to the player.
+    Think about how you want to change the DB and what you want to return to the player.
     Generate a JSON response with the following format:
     {
-        "status_code": int,
-        "vector_embedding": [float] | null,
-        "text_description": str | null,
-        "ai_message": str | null,
-        "error_message": str | null,
-        "secret": string | null,
-        "initialSetupConversation": string | null,
-        "verificationConversation": string | null,
-        "intendedUsername": string | null,
-        "cardId": string | null,
-        "cardText": string | null,
-        "memoryMetadata": object | null
+      // Generate internalThoughts first. These are your thoughts on the player's request. Players cannot see this.
+      internalThoughts: string, 
+    
+      // An HTTP status code. Use 200 if the player's requested position is allowed.
+      statusCode: number,
+      
+      // To send a message to the player, set chatMessage to the message you want to send.
+      chatMessage: ?string,
+      
+      // If there is an error, set errorReason to the error message.
+      errorReason: ?string,
+      
+      // To generate a description of the game world at the requestedPosition, set textDescription.
+      textDescription: ?string,
+      
+      // Setting initialSetupConversation will save it to the database. 
+      // For new usernames, a secret will be generated by the JS system and provided to the client.
+      // For existing usernames, set this value when the user wants to change their authorization details, redoing their initialSetupConversation. 
+      initialSetupConversation: ?string,
+      
+      // Setting verificationConversation will cause the JS system to use it to attempt to verify the user
+      // in a secondary completion call where a previously stored initialSetupConversation and the recent verificationConversation
+      // are both given to an agent responsible for determining if the user is who they say they are.
+      verificationConversation: ?string,
+      
+      // If you set a value for initialSetupConversation or verificationConversation, you must set intendedUsername.
+      intendedUsername: ?string,
+      
+      // If you want to give a card to the player, set givenCardText to the text value of the card.
+      givenCardText: ?string,
+      
+      // You may change the player's memoryMetadata by setting this value.
+      statusMetadata: ?{[string]: string}
+      
+      // You may change the player's memoryMetadata by setting this value. 
+      // The player cannot see memoryMetadata. 
+      // Use it for yourself, the AI, to remember things about the player.
+      // You will see anything you place here the next time you get a completion call for this player.
+      memoryMetadata: ?{[string]: string}
     }
 
-    If the secret matches the username, include the secret in the response.
-    If the username is null, prompt the user for their name and initiate the initial setup conversation or verification conversation as needed.
-    `;
+    If the username is empty, use chatMessage to ask them for their name and initiate the initial setup conversation or verification conversation as needed. When you have all the information collected, as seen in userChatLog, you can forward the relevant information to the output initialSetupConversation or verificationConversation as needed.
+  `
 }
 
-export async function prepareContext(event, socket) {
+export type UserEvent = {
+  username?: ?string,
+  secret?: ?string,
+  chat?: ?Array<{ role: string, content: string }>,
+  position?: ?Array<number>,
+  lookDirection?: ?Array<number>,
+  cardId?: ?string,
+}
+
+export async function prepareContext(
+  event: UserEvent,
+  socket: any,
+  playerData?: ?PlayerSQL,
+): Promise<RequestContext> {
   // Prepare the context based on the event and socket data
-  const context = {
-    ip: socket.handshake.address,
-    path: socket.handshake.url,
-    username: event.username,
-    position: event.position,
-    look_direction: event.look_direction,
-    chat_message: event.chat_message, // New chat message from the user
-    secret: event.secret,
-    status: event.status,
-    cardId: event.cardId,
-    previous_position: event.previous_position,
-    color: event.color,
-    chat_log: await getChatLog(event.username),
-    global_chat_log: await getGlobalChatLog()
-  };
+  const context: RequestContext = {
+    request: {
+      ip: socket.handshake.address,
+      path: socket.handshake.url,
+      username: event.username || '',
+      secret: event.secret || '',
+      requestedPosition: JSON.stringify(event.position || [0, 0, 0]),
+      lookDirection: JSON.stringify([90, 90]),
+      userChatLog:
+        event.chat?.map((message) => `${message.role}: ${message.content}`) ??
+        [], // New chat message from the user
+      cardId: event.cardId ?? '',
+    },
+    playerData: {
+      status: playerData?.status ?? '',
+      color: playerData?.color ?? '#FFFFFF',
+      currentPosition: playerData?.position || JSON.stringify([0, 0, 0]),
+      currentPositionDescription: '',
+      statusMetadata: playerData?.statusMetadata || JSON.stringify({}),
+      memoryMetadata: playerData?.memoryMetadata || JSON.stringify({}),
+    },
+    global: {
+      globalChatLog: await getGlobalChatLog(),
+      globalEventLog: [],
+    },
+  }
 
-  return context;
+  return context
 }
 
-async function getChatLog(username) {
-  // Retrieve the last 100 lines of chat for the given username from the database
-  // Placeholder implementation; replace with actual database query
-  return [
-    { role: 'user', content: 'Hi' },
-    { role: 'assistant', content: 'Hello! How can I help you today?' }
-  ];
-}
-
-async function getGlobalChatLog() {
+async function getGlobalChatLog(): Promise<Array<string>> {
   // Retrieve the last 100 lines of global chat from the database
-  // Placeholder implementation; replace with actual database query
-  return [
-    { role: 'user', content: 'What is happening?' },
-    { role: 'assistant', content: 'We are in the middle of an event.' }
-  ];
+  const chat = await MessageInterface.getGlobalHistory()
+  return chat.map((message) => `${message.role}: ${message.content}`)
 }
 
-export async function makeCompletionCall(context) {
+export type MainAgentResponse = {
+  statusCode: number,
+  chatMessage: ?string,
+  errorReason: ?string,
+  textDescription: ?string,
+  initialSetupConversation: ?string,
+  verificationConversation: ?string,
+  intendedUsername: ?string,
+  givenCardText: ?string,
+  statusMetadata: ?{ [string]: string },
+  memoryMetadata: ?{ [string]: string },
+}
+
+export async function makeCompletionCall(
+  context: RequestContext,
+): Promise<MainAgentResponse> {
   const messages = [
     {
       role: 'system',
-      content: makeSystemMessage()
+      content: makeSystemMessage(),
     },
     {
       role: 'user',
-      content: makeUserMessage(context)
-    }
-  ];
+      content: makeUserMessage(context),
+    },
+  ]
 
-  // Ensure the last message is a user message
-  if (messages[messages.length - 1].role !== 'user') {
-    messages.push({
-      role: 'user',
-      content: 'Please provide the necessary details.'
-    });
-  }
-
-  const responseText = await ChatCompletion.waitForCompletion(messages);
-  return JSON.parse(responseText);
+  const responseText = await ChatCompletion.waitForCompletion(messages)
+  return JSON.parse(responseText)
 }

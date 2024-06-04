@@ -9,7 +9,7 @@
   "files": [],
   "type": "module",
   "scripts": {
-    "start": "npm run schema && rebuild -w src/common -w src/backend --output build --transform 'src/*/{!(node_modules),node_modules/common}/**/*.{js,mjs}' --using scripts/transformer.js --fork build/backend/src/start.js -k 4000 -k 5555",
+    "start": "npm run schema && rebuild -w src/common -w src/backend --output build --transform 'src/*/{!(node_modules),node_modules/common}/**/*.{js,mjs}' --using scripts/transformer.js --fork build/backend/src/project/places/schema/generateSchema.js --fork build/backend/src/start.js -k 4000 -k 5555",
     "start-web": "concurrently 'cd src/web-index && npm start' 'cd src/web-places && npm start'",
     "start-ssr": "npm run build-web-local && cross-env USE_LOCALCAN=true rebuild -w src/common -w src/backend -w src/web-index -w src/web-places --output build --transform 'src/*/{!(node_modules),node_modules/common}/**/*.{js,mjs}' --using scripts/transformer.js --fork scripts/gen-sql.js --fork build/backend/src/start.js -k 4000 -k 5555",
     "mysql": "rebuild --watch src --output build --transform 'src/*/{!(node_modules),node_modules/common}/**/*.{js,mjs}' --using scripts/transformer.js --fork build/mysql/src/localStart.js -k 3306",
