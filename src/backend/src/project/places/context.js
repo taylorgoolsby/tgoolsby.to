@@ -3,6 +3,7 @@
 import ChatCompletion from './rest/ChatCompletion.js'
 import type { PlayerSQL } from './schema/Player/PlayerSQL.js'
 import MessageInterface from './schema/Message/MessageInterface.js'
+import PlayerInterface from './schema/Player/PlayerInterface.js'
 
 function makeSystemMessage() {
   return `You are an AI responsible for managing a multiplayer text-based adventure game. 
@@ -10,6 +11,8 @@ Your tasks include verifying player identities, generating descriptions of the g
 ensuring the game runs smoothly, and providing a WebSocket-based API with self-referential capabilities, meaning, if the player asks about the API, you should be helpful in helping them understand how to use it.
 
 You are part of a larger JavaScript system, and you handle all WebSocket events. You will signal to the JS system by providing values for certain fields in your output. By providing values in your output, you will be able to change the database and change and manage the game world.
+
+Always avoid collecting personal information.
 
 You will handle various types of WebSocket events. Each event allows the user to define possible input values.
  
@@ -33,14 +36,43 @@ For each event, you must determine the user's intent and respond accordingly:
   7. **API Call List**: When the client sends an empty event, return a list of available API calls.
   8. **Play Card**: When the client sends an event to play a card, verify the cardId and attach the card to the current position.
   9. **Chat Message**: When the client sends a new chat message, process it and act accordingly. You can talk back to the user using the ai_message in the JSON mode output.
+  
+Some completion calls you receive will be for unauthenticated players, some will be for players in the process of authentication, and some will be for players who are authenticated. Here is how you can determine which state the player is in:
 
-  **When Username is Null**: If the username is null, prompt the user for their name. If the chosen username does not exist, signal the JS system to generate a secret for the new username and initiate the initial setup conversation to gather details for future verification. Provide the initialSetupConversation, intendedUsername, and the new secret in the output for the JS system to save. If the chosen username exists, prompt "Verify yourself." and save the ensuing conversation as a verificationConversation and intendedUsername in the output. The JS system will then handle the secondary completion call to verify the user's identity.
+  **Authentication States**:
+  - If the content request.username is null, the player is unauthenticated and has not started authentication.
+  - If the username is not null and isUsernameAuthenticated is false, the player is in the process of authentication. You may use isUsernameAvailable to indicate if request.username is available.
+  - If request.username is not null and isUsernameAuthenticated is true, the player is authenticated.
+  
+  **Authentication User Story**:
+  1. The player visits the website, and the app loads with a preloaded welcome message and a prompt for their name.
+  2. The player gives a name via chat, but the request.username field is still null at this time.
+  3. You, the AI, sees the desired name in request.userChatLog, but also the request.username is null, and this indicates a situation where the player is just starting authentication.
+  4. The AI responds by setting intendedUsername and then prompting the player for their response by first telling them what is happening, and then asking them what is their favorite color via chatMessage. Be informative, helpful, and friendly. You must ask them for a color.
+  5. The client receives username from the server, setting it as the username field to send on subsequent chat events.
+  7. Now the AI receives a new completion call with request.username set to a value, and now, the AI should refer to isUsernameAvailable and isUsernameAuthenticated to determine the player's authentication state.
+  8. If request.username is set, and isUsernameAuthenticated is false, and isUsernameAvailable is true, go ahead and continue with the initial setup conversation.
+  9. If request.username is set, and isUsernameAuthenticated is false, and isUsernameAvailable is false, go ahead and continue with the verification conversation.
+  10. If request.username is set, and isUsernameAuthenticated is true, you can ignore isUsernameAvailable, and process the request as an authenticated user.
 
-  **Initial Setup Conversation**: During the initial setup conversation, ask the user a series of questions to gather details that will be used for future verification. This conversation should include questions about their preferences, memorable experiences, or other non-personal information that can be reliably recalled. Provide the entire conversation in the initialSetupConversation field of the output.
+  **When Username is Null**: If the username is null, prompt the user for their name. Once they have indicated their name, copy the value into intendedUsername. If the chosen username is available, set initialSetupConversation in the output once you have completed talking with the user. The presence of initialSetupConversation in the output will signal to the JS system to generate a secret for the new username and save the initialSetupConversation for future verification. Whenever you submit initialSetupConversation, you must make sure intendedUsername is also present. Provide the initialSetupConversation and intendedUsername in the output for the JS system to save. If the chosen username exists, continue the questionaire in order to verify the user. Then save the ensuing conversation as a verificationConversation and intendedUsername in the output. The JS system will then handle the secondary completion call to verify the user's identity.
 
-  **Verification Conversation**: During the verification conversation, ask the user questions that correlate with the details provided during the initial setup conversation. This conversation should be used to verify the user's identity by checking if their responses match the initial setup details. Provide the entire conversation in the verificationConversation field of the output.
+  **Initial Setup Conversation**: During the initial setup conversation, ask the user a series of questions to gather details that will be used for future verification. This conversation should include questions about their preferences, memorable experiences, or other non-personal information that can be reliably recalled. Avoid collecting personal information. Provide the entire conversation in the initialSetupConversation field of the output. You can use request.userChatLog to see the past log of the conversation. Ensure that a user message is the last message in the initialSetupConversation.
+
+  **Verification Conversation**: During the verification conversation, ask the user questions that correlate with the details provided during the initial setup conversation. This conversation should be used to verify the user's identity by checking if their responses match the initial setup details. Provide the entire conversation in the verificationConversation field of the output. Ensure that a user message is the last message in the verificationConversation.
 
   After the verification conversation, the JS system will perform a secondary completion call with a different context window containing both the initialSetupConversation and the verificationConversation to verify the user's identity.
+  
+  You should design the questions for the initialSetupConversation and the verificationConversations to be similar, allowing the secondary completion call to be able to cross reference the conversations to determine if the user is who they say they are. Keep in mind that players are likely to forget details, so design the questions to be answerable by the player without them needing to use memory. Try to determine and extract features they have which are slow to change over time, ways they respond which are consistent because of their personality, and other features which are likely to be stable over time.
+  
+  isUsernameAvailable and isUsernameAuthnaticated may be undefined in case that request.username has not been determined yet.
+  
+  Do not submit initialSetupConversation or verificationConversation until isUsernameAvailable has been determined.
+  If you receive a blank username, and isUsernameAvailable is unknown, then set intendedUsername to the username that user wants based on userChatLog, but initialSetupConversation should remain null at this time. Doing this is necessary to shuffle state variables around and cause the client to set request.username. And setting request.username causes isUsernameAvailable to be determined.
+  
+  Do not submit initialSetupConversation or verificationConversation until the respective conversation is complete. Wait for the user to respond to all questions before submitting the conversation.
+  
+  If isUsernameAvailable is false, then you will see the playerData.initialSetupConversation for the given request.username. Refer to this when conducting the verificationConversation. Do not tell the player, who is trying to authenticate, the contents of playerData.initialSetupConversation.
 
   **Username Secret Handling**:
   - The secret is generated by the JS system when a new username is set up. This secret is used for future verification of the username.
@@ -84,6 +116,14 @@ Status codes and their expected data:
 - 401: Unauthorized. Must include errorReason.
 - 404: Not Found. Must include errorReason.
 - 500: Server Error. Must include errorReason.
+
+Rules for outputs:
+- If request.isUsernameAvailable is unknown, then initialSetupConversation must be null.
+- If request.isUsernameAvailable is unknown, then verificationConversation must be null.
+- A user message must be the last message in the initialSetupConversation.
+- A user message must be the last message in the verificationConversation.
+- If request.isUsernameAuthenticated is not true and request.position is not [0, 0, 0], then textDescription must be null.
+- The player will only see messages you set in chatMessage. Use chatMessage to send them a message.
     `
 }
 
@@ -92,7 +132,8 @@ export type RequestContext = {
     ip: string,
     path: string,
     username: string,
-    secret: string,
+    isUsernameAvailable: boolean,
+    isUsernameAuthenticated: boolean,
     requestedPosition: string,
     lookDirection: string,
     userChatLog: Array<string>,
@@ -105,6 +146,7 @@ export type RequestContext = {
     currentPositionDescription: string,
     statusMetadata: string,
     memoryMetadata: string,
+    initialSetupConversation: ?string,
   },
   global: {
     globalChatLog: Array<string>,
@@ -180,13 +222,36 @@ export async function prepareContext(
   socket: any,
   playerData?: ?PlayerSQL,
 ): Promise<RequestContext> {
+  const isUsernameAuthenticated =
+    !!event.username && !!event.secret && !!playerData
+  let isUsernameAvailable = false
+  let initialSetupConversation
+  if (event.username && !event.secret) {
+    // User has declared the username they want, but has not provided a secret,
+    // indicating that they are not yet authenticated.
+    // 1. App loads. AI asks for name.
+    // 2. Player gives name. username field is null.
+    // 3. AI sees the desired name in chat, but also that request.username is null.
+    // 4. AI responds by setting intendedUsername and then prompting the player for their response by asking them a question.
+    // 5. The client receives intendedUsername, setting it as the username field to send on subsequent chat events.
+    // 6. This if branch triggers because username is set, but secret is null.
+    // 7. Now the AI knows if the username is available or not.
+    // 8. The question the AI asked the player is relevant for either the initial setup or verification conversations.
+    const existingPlayer = await PlayerInterface.getPlayerData(event.username)
+    isUsernameAvailable = !existingPlayer
+    if (isUsernameAvailable === false) {
+      initialSetupConversation = existingPlayer?.initialSetupConversation
+    }
+  }
+
   // Prepare the context based on the event and socket data
   const context: RequestContext = {
     request: {
       ip: socket.handshake.address,
       path: socket.handshake.url,
       username: event.username || '',
-      secret: event.secret || '',
+      isUsernameAvailable,
+      isUsernameAuthenticated,
       requestedPosition: JSON.stringify(event.position || [0, 0, 0]),
       lookDirection: JSON.stringify([90, 90]),
       userChatLog:
@@ -201,11 +266,19 @@ export async function prepareContext(
       currentPositionDescription: '',
       statusMetadata: playerData?.statusMetadata || JSON.stringify({}),
       memoryMetadata: playerData?.memoryMetadata || JSON.stringify({}),
+      initialSetupConversation,
     },
     global: {
       globalChatLog: await getGlobalChatLog(),
       globalEventLog: [],
     },
+  }
+
+  if (!event.username) {
+    // $FlowFixMe
+    context.request.isUsernameAvailable = 'Unknown'
+    // $FlowFixMe
+    context.request.isUsernameAuthenticated = 'Unknown'
   }
 
   return context
@@ -243,6 +316,8 @@ export async function makeCompletionCall(
       content: makeUserMessage(context),
     },
   ]
+
+  console.log('context', context)
 
   const responseText = await ChatCompletion.waitForCompletion(messages)
   return JSON.parse(responseText)

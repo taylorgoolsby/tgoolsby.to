@@ -1,6 +1,6 @@
 // @flow
 
-import sqltag from 'common/sql-template-tag'
+import sqltag, { raw } from 'common/sql-template-tag'
 import { query } from '../database.js'
 import type { MessageSQL } from './MessageSQL.js'
 
@@ -37,7 +37,7 @@ export default class MessageInterface {
       ) VALUES (
         ${username}, 
         ${role}, 
-        ${content}
+        ${raw(`'${content.replace(/'/g, "''")}'`)}
       );
     `
     await query(sql)

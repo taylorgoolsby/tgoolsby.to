@@ -106,11 +106,6 @@ export default function (app: any): any {
 
         // Check, validate, sanitize user inputs immediately:
 
-        if (username && !secret) {
-          socket.emit('error', 'Unauthorized request')
-          return
-        }
-
         let playerData
         let realChat = chat
         if (username && secret) {
@@ -127,6 +122,14 @@ export default function (app: any): any {
             role: message.role,
             content: message.content,
           }))
+
+          // Last user message is the new message from the user
+          if (chat && chat.length) {
+            const lastMessage = chat[chat.length - 1]
+            if (lastMessage.role === 'user') {
+              realChat.push(lastMessage)
+            }
+          }
         }
 
         const userEvent: UserEvent = {
@@ -157,7 +160,9 @@ export default function (app: any): any {
         // Broadcast the new data to all connected clients
         io.emit('update', {
           statusCode: response.statusCode,
-          username,
+          username: userEvent.secret
+            ? userEvent.username
+            : response.intendedUsername,
           secret: setSecret,
           message: response.chatMessage,
 

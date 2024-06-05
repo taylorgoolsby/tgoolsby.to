@@ -26,7 +26,7 @@ type Player {
   dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
 }
 
-type Description {
+type Description @sql(constraints: "UNIQUE(positionX, positionY, positionZ)") {
   descriptionId: Int @sql(type: "INTEGER", primary: true, auto: true)
   positionX: Int @sql(type: "INTEGER", index: true)
   positionY: Int @sql(type: "INTEGER", index: true)

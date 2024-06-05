@@ -1,4 +1,20 @@
-export default `CREATE TABLE IF NOT EXISTS \`Player\` (
+export default `CREATE TABLE IF NOT EXISTS \`Description\` (
+  \`descriptionId\` INTEGER PRIMARY KEY AUTOINCREMENT,
+  \`positionX\` INTEGER NOT NULL,
+  \`positionY\` INTEGER NOT NULL,
+  \`positionZ\` INTEGER NOT NULL,
+  \`lookDirectionAngle\` INTEGER NOT NULL,
+  \`lookDirectionAzimuth\` INTEGER NOT NULL,
+  \`description\` TEXT NOT NULL,
+  \`dateUpdated\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  \`dateCreated\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(positionX, positionY, positionZ)
+);
+CREATE INDEX IF NOT EXISTS \`POSITIONXINDEX\` ON \`Description\` (\`positionX\` ASC);
+CREATE INDEX IF NOT EXISTS \`POSITIONYINDEX\` ON \`Description\` (\`positionY\` ASC);
+CREATE INDEX IF NOT EXISTS \`POSITIONZINDEX\` ON \`Description\` (\`positionZ\` ASC);
+
+CREATE TABLE IF NOT EXISTS \`Player\` (
   \`username\` VARCHAR(25) NOT NULL,
   \`status\` VARCHAR(50) NOT NULL,
   \`color\` VARCHAR(7) NOT NULL,
@@ -9,24 +25,8 @@ export default `CREATE TABLE IF NOT EXISTS \`Player\` (
   \`memoryMetadata\` TEXT NOT NULL DEFAULT '{}',
   \`initialSetupConversation\` TEXT NOT NULL,
   \`dateUpdated\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  \`dateCreated\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (\`username\`)
-);
-
-CREATE TABLE IF NOT EXISTS \`Description\` (
-  \`descriptionId\` INTEGER PRIMARY KEY AUTOINCREMENT,
-  \`positionX\` INTEGER NOT NULL,
-  \`positionY\` INTEGER NOT NULL,
-  \`positionZ\` INTEGER NOT NULL,
-  \`lookDirectionAngle\` INTEGER NOT NULL,
-  \`lookDirectionAzimuth\` INTEGER NOT NULL,
-  \`description\` TEXT NOT NULL,
-  \`dateUpdated\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   \`dateCreated\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS \`POSITIONXINDEX\` ON \`Description\` (\`positionX\` ASC);
-CREATE INDEX IF NOT EXISTS \`POSITIONYINDEX\` ON \`Description\` (\`positionY\` ASC);
-CREATE INDEX IF NOT EXISTS \`POSITIONZINDEX\` ON \`Description\` (\`positionZ\` ASC);
 
 CREATE TABLE IF NOT EXISTS \`Error\` (
   \`errorId\` INTEGER PRIMARY KEY AUTOINCREMENT,

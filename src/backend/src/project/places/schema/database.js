@@ -42,7 +42,7 @@ export async function query(queryObject: {
 
     const sql = flattenSql(queryObject)
 
-    // console.log('sql', sql)
+    console.log('sql', sql)
 
     if (typeof window !== 'undefined') {
       // Browser environment

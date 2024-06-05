@@ -36,7 +36,7 @@ export async function validateAndProcessResponse(
     }
 
     if (response.textDescription && event.position && event.lookDirection) {
-      await DescriptionInterface.storeTextDescription(
+      await DescriptionInterface.storeOrUpdateTextDescription(
         event.position,
         event.lookDirection,
         response.textDescription,
