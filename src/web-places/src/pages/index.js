@@ -1,7 +1,7 @@
-import Landing from '../dpages/Landing.js'
+import Places from '../dpages/Places.js'
 
 function Index(props) {
-  return <Landing {...props} />
+  return <Places {...props} />
 }
 
 export default Index

@@ -5,6 +5,7 @@ import DescriptionInterface from './schema/Description/DescriptionInterface.js'
 import ErrorInterface from './schema/Error/ErrorInterface.js'
 import ChatCompletion from './rest/ChatCompletion.js'
 import type { MainAgentResponse, UserEvent } from './context.js'
+import MessageInterface from './schema/Message/MessageInterface.js'
 
 export async function validateAndProcessResponse(
   response: MainAgentResponse,
@@ -13,15 +14,6 @@ export async function validateAndProcessResponse(
   // Validate response format based on status code
   switch (response.statusCode) {
     case 200:
-      if (response.textDescription && event.position && event.lookDirection) {
-        await DescriptionInterface.storeTextDescription(
-          event.position,
-          event.lookDirection,
-          response.textDescription,
-        )
-      } else {
-        throw new Error('Invalid response format for status code 200')
-      }
       break
     case 400:
     case 401:
@@ -39,6 +31,18 @@ export async function validateAndProcessResponse(
   // Process memory metadata if present
   const username = event.username
   if (username) {
+    if (response.chatMessage) {
+      await MessageInterface.insert(username, 'assistant', response.chatMessage)
+    }
+
+    if (response.textDescription && event.position && event.lookDirection) {
+      await DescriptionInterface.storeTextDescription(
+        event.position,
+        event.lookDirection,
+        response.textDescription,
+      )
+    }
+
     if (response.statusMetadata) {
       await PlayerInterface.updateStatusMetadata(
         username,

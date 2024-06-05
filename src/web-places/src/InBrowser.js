@@ -43,6 +43,7 @@ import { css } from 'goober'
 // import Docs from './dpages/Docs.js'
 // import Privacy from './dpages/Privacy.js'
 import Colors from './Colors.js'
+import Places from './dpages/Places.js'
 // import CookieBanner from './components/CookieBanner.js'
 // import Cookie from './dpages/Cookie.js'
 // import Script from 'next/script'
@@ -100,10 +101,10 @@ const Body: any = observer((): any => {
   }
 
   if (!sessionStore.observables.isLoggedIn) {
-    return <Landing />
+    return <Places />
   }
   if (!sessionStore.observables.loaded) {
-    return <Landing />
+    return <Places />
   }
 
   if (res.loading) {
@@ -120,19 +121,19 @@ const Body: any = observer((): any => {
   const currentUser = res.data?.viewer?.currentUser
 
   if (!currentUser) {
-    return <Landing />
+    return <Places />
   }
 
-  const isOnboarded = !!currentUser?.isOnboarded
-  if (!!currentUser && !isOnboarded) {
-    return <Onboarding />
-  }
+  // const isOnboarded = !!currentUser?.isOnboarded
+  // if (!!currentUser && !isOnboarded) {
+  //   return <Onboarding />
+  // }
 
-  return <Home />
+  return <Places />
 })
 
 export const routes: { [string]: any } = {
-  '/': Body,
+  '/': Places,
   // '/auth': Landing,
   // '/create': Landing,
   // '/terms': Terms,

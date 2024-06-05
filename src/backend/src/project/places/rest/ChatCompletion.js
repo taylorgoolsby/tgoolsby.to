@@ -11,22 +11,34 @@ export default class ChatCompletion {
     // Ensure the pattern is enforced: system, user, assistant, alternating user and assistant, and ending with a user message
     const formattedMessages = formatMessages(messages)
 
-    const response = await axios.post(
-      'https://api.openai.com/v1/completions',
-      {
-        model: 'gpt-3.5-turbo',
-        messages: formattedMessages,
-        max_tokens: 1000,
-        response_format: '{ "type": "json_object" }',
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${Config.openAiPublicTrialKey}`,
+    let response
+    try {
+      response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4o',
+          messages: formattedMessages,
+          max_tokens: 1000,
+          response_format: { type: 'json_object' },
         },
-      },
-    )
+        {
+          headers: {
+            Authorization: `Bearer ${Config.openAiPublicTrialKey}`,
+          },
+        },
+      )
 
-    return response.data.choices[0].message.content
+      console.log(
+        'response.data.choices[0].message.content',
+        response.data.choices[0].message.content,
+      )
+
+      return response.data.choices[0].message.content
+    } catch (err) {
+      console.error(err.message)
+      console.log('err.response.data', err.response.data)
+      return '{}'
+    }
   }
 }
 

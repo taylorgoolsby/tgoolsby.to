@@ -23,4 +23,23 @@ export default class MessageInterface {
     `
     return await query(sql)
   }
+
+  static async insert(
+    username: string,
+    role: string,
+    content: string,
+  ): Promise<void> {
+    const sql = sqltag`
+      INSERT INTO Message (
+        username, 
+        role, 
+        content
+      ) VALUES (
+        ${username}, 
+        ${role}, 
+        ${content}
+      );
+    `
+    await query(sql)
+  }
 }

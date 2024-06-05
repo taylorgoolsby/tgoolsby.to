@@ -14,7 +14,7 @@ export default class Document extends NextDocument {
       <Html lang="en">
         <Head>
           <meta charSet="UTF-8" />
-          <meta property="og:title" content="cobalt" />
+          <meta property="og:title" content="places.tgoolsby.to" />
           {/*<meta property="og:type" content="website" />*/}
           {/*<meta property="og:url" content="https://cobalt.online" />*/}
           {/*<meta*/}

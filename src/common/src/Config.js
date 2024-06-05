@@ -27,6 +27,7 @@ const {
   API_HOST,
   WEB_BACKEND_HOST,
   WEB_CLIENT_HOST,
+  STABILITY_AI_KEY,
   OPENAI_PUBLIC_TRIAL_KEY,
   OAUTH_GITHUB_CLIENT_ID,
   OAUTH_GITHUB_SECRET,
@@ -145,6 +146,7 @@ class Config {
   // static oauthGoogleId: string = nonMaybe(OAUTH_GOOGLE_ID)
   // static oauthGoogleSecret: string = nonMaybe(OAUTH_GOOGLE_SECRET)
 
+  static stabilityAiKey: string = nonMaybe(STABILITY_AI_KEY)
   static openAiPublicTrialKey: string = nonMaybe(OPENAI_PUBLIC_TRIAL_KEY)
 
   static oauthGithubClientId: ?string = oauthGithubClientId

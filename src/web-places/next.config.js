@@ -2,6 +2,9 @@ const { withGoogleFonts } = require('nextjs-google-fonts')
 
 const isProd =
   process.env.NODE_ENV === 'production' && process.env.RUNTIME !== 'local'
+const backendHost = isProd
+  ? 'https://places.tgoolsby.to'
+  : 'http://localhost:4000'
 
 const nextConfig = {
   reactStrictMode: false, // We use FlipMove
@@ -12,7 +15,7 @@ const nextConfig = {
   // },
   env: {
     RUNTIME: process.env.NODE_ENV,
-    BACKEND_HOST: 'http://localhost:4000',
+    BACKEND_HOST: backendHost,
   },
   async rewrites() {
     return [

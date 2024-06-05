@@ -9,18 +9,27 @@ import { validateAndProcessResponse } from './validateAndProcessResponse.js'
 import PlayerInterface from './schema/Player/PlayerInterface.js'
 import { generateSecret } from './utils/generateSecret.js'
 import ChatCompletion from './rest/ChatCompletion.js'
-import type { MainAgentResponse } from './context.js'
+import type { MainAgentResponse, UserEvent } from './context.js'
 import MessageInterface from './schema/Message/MessageInterface.js'
+import Config from 'common/src/Config.js'
 
-export default function (app: any, router: any): any {
+export default function (app: any): any {
   const server = http.createServer(app)
-  const io = new Server(server)
+  const io = new Server(server, {
+    cors: {
+      origin: '*',
+    },
+  })
 
   io.use((socket, next) => {
+    if (!Config.isProd) return next()
+
     // Check subdomain
     const handshakeData = socket.request
     const host = handshakeData.headers.host
     const subdomain = tld.parse(host).subdomain
+
+    console.log('subdomain', subdomain)
 
     if (subdomain === 'places') {
       next()
@@ -31,6 +40,11 @@ export default function (app: any, router: any): any {
 
   io.on('connection', (socket) => {
     console.log('a user connected to places')
+
+    socket.emit('update', {
+      statusCode: 200,
+      chat: [{ role: 'assistant', content: 'Welcome! What is your name?' }],
+    })
 
     socket.on('disconnect', () => {
       console.log('user disconnected from places')
@@ -115,7 +129,7 @@ export default function (app: any, router: any): any {
           }))
         }
 
-        const userEvent = {
+        const userEvent: UserEvent = {
           username,
           secret,
           chat: realChat,
@@ -136,6 +150,10 @@ export default function (app: any, router: any): any {
           setSecret = await handleVerification(response)
         }
 
+        const outputChat = (userEvent.chat ?? []).concat([
+          { role: 'assistant', content: response.chatMessage },
+        ])
+
         // Broadcast the new data to all connected clients
         io.emit('update', {
           statusCode: response.statusCode,
@@ -153,6 +171,8 @@ export default function (app: any, router: any): any {
           status: playerData?.status ?? '',
           statusMetadata:
             response.statusMetadata ?? playerData?.statusMetadata ?? {},
+
+          chat: outputChat,
         })
       } catch (error) {
         console.error('Error handling event:', error)
@@ -162,6 +182,8 @@ export default function (app: any, router: any): any {
   })
 
   initializeDatabase().catch(console.error)
+
+  return server
 }
 
 async function initiateInitialSetup() {

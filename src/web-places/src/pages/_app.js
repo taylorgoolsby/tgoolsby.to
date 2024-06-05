@@ -152,7 +152,7 @@ const App = ({ Component, pageProps }: any): any => {
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>cobalt</title>
+        <title>places.tgoolsby.to</title>
       </Head>
       <GlobalStyles />
       {body}

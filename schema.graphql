@@ -13,8 +13,7 @@ directive @pagination on FIELD_DEFINITION
 scalar JSON
 
 type Player {
-  playerId: Int @sql(type: "INT", primary: true, auto: true)
-  username: String @sql(type: "VARCHAR(25)")
+  username: String @sql(type: "VARCHAR(25)", index: true, primary: true)
   status: String @sql(type: "VARCHAR(50)")
   color: String @sql(type: "VARCHAR(7)")
   secret: String @sql(type: "VARCHAR(50)")
@@ -29,10 +28,12 @@ type Player {
 
 type Description {
   descriptionId: Int @sql(type: "INTEGER", primary: true, auto: true)
-  position: JSON @sql(type: "TEXT")
-  lookDirection: JSON @sql(type: "TEXT")
+  positionX: Int @sql(type: "INTEGER", index: true)
+  positionY: Int @sql(type: "INTEGER", index: true)
+  positionZ: Int @sql(type: "INTEGER", index: true)
+  lookDirectionAngle: Int @sql(type: "INTEGER")
+  lookDirectionAzimuth: Int @sql(type: "INTEGER")
   description: String @sql(type: "TEXT")
-  embedding: JSON @sql(type: "TEXT")
   dateUpdated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
   dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
 }
@@ -41,6 +42,15 @@ type Error {
   errorId: Int @sql(type: "INTEGER", primary: true, auto: true)
   message: String @sql(type: "TEXT")
   aiMessage: String @sql(type: "TEXT", nullable: true)
+  dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
+}
+
+type Message {
+  messageId: Int @sql(type: "INTEGER", primary: true, auto: true)
+  username: String @sql(type: "VARCHAR(25)", index: true)
+  role: String @sql(type: "VARCHAR(50)")
+  content: String @sql(type: "TEXT")
+  dateUpdated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
   dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
 }
 

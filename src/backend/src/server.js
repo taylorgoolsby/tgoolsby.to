@@ -84,11 +84,10 @@ app.use((req, res, next) => {
   }
 })
 
+const httpServer: any = setupPlaces(app)
 // Set up routes for serving web pages for each project by subdomain.
-const webIndexRouter = createWebRouter(app, 'web-index')
-const webPlacesRouter = createWebRouter(app, 'web-places')
-
-setupPlaces(app, webPlacesRouter)
+// const webIndexRouter = createWebRouter(app, 'web-index')
+// const webPlacesRouter = createWebRouter(app, 'web-places')
 
 app.use((req, res, next) => {
   return res.status(404).json({
@@ -96,5 +95,4 @@ app.use((req, res, next) => {
   })
 })
 
-const server: any = http.createServer(app)
-export default server
+export default httpServer

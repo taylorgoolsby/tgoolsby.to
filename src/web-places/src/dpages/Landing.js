@@ -80,7 +80,7 @@ const styles = {
 
 const motd = `
 
-Places
+Place
 
 `.trim()
 
