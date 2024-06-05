@@ -193,7 +193,7 @@ export default function (app: any): any {
           message: response.chatMessage,
 
           position: JSON.parse(context.request.requestedPosition),
-          lookDirection: JSON.parse(context.request.lookDirection),
+          lookDirection: [90, 90],
           textDescription: response.textDescription,
 
           // The cards the username has:

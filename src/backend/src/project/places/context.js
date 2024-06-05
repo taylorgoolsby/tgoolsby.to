@@ -139,7 +139,7 @@ export type RequestContext = {
     isUsernameAvailable: boolean,
     isUsernameAuthenticated: boolean,
     requestedPosition: string,
-    lookDirection: string,
+    lookDirection?: string,
     userChatLog: Array<string>,
     cardId: string,
   },
@@ -257,7 +257,7 @@ export async function prepareContext(
       isUsernameAvailable,
       isUsernameAuthenticated,
       requestedPosition: JSON.stringify(event.position || [0, 0, 0]),
-      lookDirection: JSON.stringify([90, 90]),
+      // lookDirection: JSON.stringify([90, 90]),
       userChatLog:
         event.chat?.map((message) => `${message.role}: ${message.content}`) ??
         [], // New chat message from the user

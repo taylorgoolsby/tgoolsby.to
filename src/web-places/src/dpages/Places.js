@@ -192,6 +192,54 @@ const Places: any = observer(() => {
 const Image: any = (props) => {
   const { position, textDescription } = props
 
+  const [image, setImage] = useState('')
+
+  async function generateImage(textDescription: string) {
+    const engineId = 'stable-diffusion-xl-1024-v1-0'
+    const apiHost = 'https://api.stability.ai'
+    const apiKey = 'sk-GHtkeJBKQa7TClVDyitlxetZNsLcnFlyghpNbivN4pwO82a8'
+
+    if (!apiKey) throw new Error('Missing Stability API key.')
+
+    const response = await fetch(
+      `${apiHost}/v1/generation/${engineId}/text-to-image`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          text_prompts: [
+            {
+              text: textDescription,
+            },
+          ],
+          cfg_scale: 7,
+          height: 1024,
+          width: 1024,
+          steps: 30,
+          samples: 1,
+        }),
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error(`Non-200 response: ${await response.text()}`)
+    }
+
+    const responseJSON = await response.json()
+    const imageBase64 = responseJSON.artifacts[0].base64
+    return `data:image/png;base64,${imageBase64}`
+  }
+
+  useEffect(() => {
+    if (textDescription) {
+      generateImage(textDescription).then(setImage).catch(console.error)
+    }
+  }, [textDescription])
+
   return (
     <View
       style={{
@@ -201,6 +249,13 @@ const Image: any = (props) => {
         justifyContent: 'center',
       }}
     >
+      {image ? (
+        <img
+          src={image}
+          alt={textDescription}
+          style={{ width: '100%', height: '100%' }}
+        />
+      ) : null}
       <Text style={{ position: 'absolute', top: 0, left: 0 }}>
         {JSON.stringify(position)}
       </Text>
@@ -210,6 +265,9 @@ const Image: any = (props) => {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          color: 'white',
+          padding: 12,
         }}
       >
         {textDescription}
