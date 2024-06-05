@@ -5,7 +5,9 @@ export default `CREATE TABLE IF NOT EXISTS \`Description\` (
   \`positionZ\` INTEGER NOT NULL,
   \`lookDirectionAngle\` INTEGER NOT NULL,
   \`lookDirectionAzimuth\` INTEGER NOT NULL,
-  \`description\` TEXT NOT NULL,
+  \`text\` TEXT NOT NULL,
+  \`embedding\` TEXT NULL,
+  \`imageUrl\` TEXT NULL,
   \`dateUpdated\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   \`dateCreated\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(positionX, positionY, positionZ)

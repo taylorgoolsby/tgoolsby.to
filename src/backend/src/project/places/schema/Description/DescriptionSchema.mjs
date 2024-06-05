@@ -8,7 +8,9 @@ export const typeDefs = gql`
     positionZ: Int @sql(type: "INTEGER", index: true)
     lookDirectionAngle: Int @sql(type: "INTEGER")
     lookDirectionAzimuth: Int @sql(type: "INTEGER")
-    description: String @sql(type: "TEXT")
+    text: String @sql(type: "TEXT")
+    embedding: JSON @sql(type: "TEXT", nullable: true)
+    imageUrl: String @sql(type: "TEXT", nullable: true)
     dateUpdated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
     dateCreated: String @sql(type: "TIMESTAMP", default: "CURRENT_TIMESTAMP")
   }

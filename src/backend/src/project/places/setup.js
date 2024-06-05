@@ -12,6 +12,7 @@ import ChatCompletion from './rest/ChatCompletion.js'
 import type { MainAgentResponse, UserEvent } from './context.js'
 import MessageInterface from './schema/Message/MessageInterface.js'
 import Config from 'common/src/Config.js'
+import DescriptionInterface from './schema/Description/DescriptionInterface.js'
 
 export default function (app: any): any {
   const server = http.createServer(app)
@@ -38,12 +39,17 @@ export default function (app: any): any {
     }
   })
 
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     console.log('a user connected to places')
+
+    const description = await DescriptionInterface.get(0, 0, 0)
 
     socket.emit('update', {
       statusCode: 200,
       chat: [{ role: 'assistant', content: 'Welcome! What is your name?' }],
+      position: [0, 0, 0],
+      lookDirection: [90, 90],
+      textDescription: description?.text ?? '',
     })
 
     socket.on('disconnect', () => {
@@ -86,7 +92,7 @@ export default function (app: any): any {
             This is an array of three integers: [x, y, z]
             Z is locked to 0 at this time.
           */
-          position,
+          // position,
 
           /*
             The direction in the world the user is looking.
@@ -105,6 +111,18 @@ export default function (app: any): any {
         } = event
 
         // Check, validate, sanitize user inputs immediately:
+
+        // Lock z=0
+        const position = [...event.position]
+        console.log('typeof event.position', typeof event.position)
+        console.log('position.length', position.length)
+        if (position.length !== 3) {
+          socket.emit('error', 'Invalid position')
+          return
+        }
+        position[0] = parseInt(position[0])
+        position[1] = parseInt(position[1])
+        position[2] = 0
 
         let playerData
         let realChat = chat
@@ -148,9 +166,17 @@ export default function (app: any): any {
 
         let setSecret
         if (response.initialSetupConversation) {
-          setSecret = await handleInitialSetup(response)
+          try {
+            setSecret = await handleInitialSetup(response)
+          } catch (err) {
+            console.error(err)
+          }
         } else if (response.verificationConversation) {
-          setSecret = await handleVerification(response)
+          try {
+            setSecret = await handleVerification(response)
+          } catch (err) {
+            console.error(err)
+          }
         }
 
         const outputChat = (userEvent.chat ?? []).concat([
@@ -166,8 +192,8 @@ export default function (app: any): any {
           secret: setSecret,
           message: response.chatMessage,
 
-          position: context.request.requestedPosition,
-          lookDirection: context.request.lookDirection,
+          position: JSON.parse(context.request.requestedPosition),
+          lookDirection: JSON.parse(context.request.lookDirection),
           textDescription: response.textDescription,
 
           // The cards the username has:
@@ -249,7 +275,9 @@ async function handleVerification(
     verificationConversation,
   )
   if (!verificationResult) {
-    throw new Error('Verification failed')
+    response.statusCode = 401
+    response.errorReason = 'Verification failed.'
+    return
   }
   return playerData.secret
 }

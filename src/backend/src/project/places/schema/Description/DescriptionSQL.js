@@ -1,10 +1,15 @@
 // @flow
 
 export type DescriptionSQL = {
-  position: string,
-  look_direction: string,
-  description: string,
+  descriptionId: number,
+  positionX: number,
+  positionY: number,
+  positionZ: number,
+  lookDirectionAngle: number,
+  lookDirectionAzimuth: number,
+  text: string,
   embedding: string,
+  imageUrl: string,
   dateUpdated: string,
   dateCreated: string,
-};
+}

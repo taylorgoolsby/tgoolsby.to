@@ -15,6 +15,7 @@ class PlacesStore {
   chat: Array<{ role: string, content: string }> = []
   position: Array<number> = [0, 0, 0]
   lookDirection: Array<number> = [90, 90]
+  textDescription: string = ''
   cards: Array<any> = []
   socket: any = null
 
@@ -25,6 +26,7 @@ class PlacesStore {
       chat: observable,
       position: observable,
       lookDirection: observable,
+      textDescription: observable,
       cards: observable,
     })
   }
@@ -52,7 +54,6 @@ class PlacesStore {
         statusCode,
         // username,
         secret,
-        message,
         position,
         lookDirection,
         textDescription,
@@ -72,6 +73,9 @@ class PlacesStore {
         this.secret = secret
       }
 
+      this.position = position
+      this.lookDirection = lookDirection
+      this.textDescription = textDescription
       this.chat = chat
     })
 
@@ -84,7 +88,7 @@ const store = new PlacesStore()
 
 export const topLevelClassName: string = css`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-start;
   min-width: 0;
   position: relative;
@@ -97,16 +101,20 @@ export const topLevelClassName: string = css`
     flex-shrink: 0;
   }
 
-  .chatWindow {
+  .panel {
     background-color: rgba(0, 0, 0, 0.4);
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    margin: 12px;
+    align-self: stretch;
+    flex: 1;
+    /*max-width: 600px;*/
+  }
+
+  .chatWindow {
+    flex: 1;
     padding: 12px;
     padding-top: 5px;
     color: white;
-    width: 720px;
+    justify-content: flex-end;
+    align-self: stretch;
 
     > .wrapper {
       min-height: calc(5 * 1.5em);
@@ -152,25 +160,73 @@ const Places: any = observer(() => {
 
     console.log('username', username)
     console.log('secret', secret)
+    console.log('position', position)
 
-    store.socket.emit('event', {
+    const payload = {
       username,
       secret,
       chat: nextChat,
       position,
       lookDirection,
       cardId: '',
-    })
+    }
+
+    console.log('payload', payload)
+
+    store.socket.emit('event', payload)
 
     store.chat = nextChat
   }
 
   return (
     <View className={topLevelClassName}>
-      <Chat messages={store.chat} onSubmit={sendChatMessage} />
+      <Image
+        position={store.position}
+        textDescription={store.textDescription}
+      />
+      <Panel messages={store.chat} onSubmitChatMessage={sendChatMessage} />
     </View>
   )
 })
+
+const Image: any = (props) => {
+  const { position, textDescription } = props
+
+  return (
+    <View
+      style={{
+        aspectRatio: 1,
+        alignSelf: 'stretch',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ position: 'absolute', top: 0, left: 0 }}>
+        {JSON.stringify(position)}
+      </Text>
+      <Text
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+        }}
+      >
+        {textDescription}
+      </Text>
+    </View>
+  )
+}
+
+const Panel: any = (props) => {
+  const { messages, onSubmitChatMessage } = props
+
+  return (
+    <View className="panel">
+      <Chat messages={messages} onSubmit={onSubmitChatMessage} />
+    </View>
+  )
+}
 
 const Chat: any = (props) => {
   const { onSubmit, messages } = props
@@ -201,6 +257,7 @@ const Chat: any = (props) => {
               submitMessage()
             }
           }}
+          autoFocus
         />
         <button onClick={submitMessage}>Send</button>
       </View>

@@ -24,7 +24,7 @@ export default class DescriptionInterface {
           positionZ,  
           lookDirectionAngle,
           lookDirectionAzimuth,
-          description
+          text
         ) VALUES (
           ${position[0]},
           ${position[1]},
@@ -38,7 +38,7 @@ export default class DescriptionInterface {
     } else {
       const sql = sqltag`
         UPDATE description
-        SET description = ${raw(`'${description.replace(/'/g, "''")}'`)},
+        SET text = ${raw(`'${description.replace(/'/g, "''")}'`)},
         dateUpdated = CURRENT_TIMESTAMP
         WHERE positionX = ${position[0]}
         AND positionY = ${position[1]}

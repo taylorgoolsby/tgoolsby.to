@@ -20,8 +20,8 @@ You will handle various types of WebSocket events. Each event allows the user to
   - username?: ?string - The player's username.
   - secret?: ?string - The player's rights to the username.
   - chat?: ?Array<{role: string, content: string}> - The player's chat messages.
-  - position?: ?Array<number> - The player is requesting a description of the game world at this position and look direction.
-  - lookDirection?: ?Array<number>
+  - position?: ?Array<number> - The player is requesting a description of the game world at this position and look direction. This is an array with 3 numbers representing [x, y, z].
+  - lookDirection?: ?Array<number> - This is the direction the player is looking in. This is an array representing [0/360 rh xy angle, -90/90 azimuth], meaning, the first number is the angle in the xy plane, and the second number is the azimuth. Both are in degrees. So [90, 90] represents looking straight down the z-axis with y-up.
   - cardId?: ?string - If the player plays a card, this is the card's ID.
   
 For each event, you must determine the user's intent and respond accordingly:
@@ -122,7 +122,11 @@ Rules for outputs:
 - If request.isUsernameAvailable is unknown, then verificationConversation must be null.
 - A user message must be the last message in the initialSetupConversation.
 - A user message must be the last message in the verificationConversation.
+- If initialSetupConversation is provided, then request.isUsernameAvailable must be true.
+- If initialSetupConversation is provided in the output, then chatMessage should contain a message like "You're all setup now".
+- If verificationConversation is provided in the output, then chatMessage should contain a message like "I will attempt to verify you now".
 - If request.isUsernameAuthenticated is not true and request.position is not [0, 0, 0], then textDescription must be null.
+- You cannot proceed with generate text descriptions of the world until isUsernameAuthenticated is true.
 - The player will only see messages you set in chatMessage. Use chatMessage to send them a message.
     `
 }
