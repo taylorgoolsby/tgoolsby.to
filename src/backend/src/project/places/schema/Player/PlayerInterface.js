@@ -3,7 +3,6 @@
 import sqltag, { raw } from 'common/sql-template-tag'
 import { query } from '../database.js'
 import type { PlayerSQL } from './PlayerSQL.js'
-import { escape } from '../../utils/SqlString.js'
 
 export default class PlayerInterface {
   static async getPlayerData(username: string): Promise<?PlayerSQL> {
@@ -47,6 +46,23 @@ export default class PlayerInterface {
         ${JSON.stringify(memoryMetadata)},
         ${raw(`'${initialSetupConversation.replace(/'/g, "''")}'`)}
       );
+    `
+    await query(sql)
+  }
+
+  static async updateAuth(
+    username: string,
+    secret: string,
+    initialSetupConversation: string,
+  ): Promise<void> {
+    const sql = sqltag`
+      UPDATE Player
+      SET secret = ${secret}, 
+      initialSetupConversation = ${raw(
+        `'${initialSetupConversation.replace(/'/g, "''")}'`,
+      )},
+      dateUpdated = CURRENT_TIMESTAMP
+      WHERE username = ${username};
     `
     await query(sql)
   }

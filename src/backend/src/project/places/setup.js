@@ -231,19 +231,31 @@ async function handleInitialSetup(
     return
   }
 
-  const secret = generateSecret() // Generate a unique secret for the user
-  await PlayerInterface.insertPlayer(
-    username,
-    '',
-    '#FFFFFF',
-    secret,
-    [0, 0, 0],
-    [0, 0],
-    response.statusMetadata ?? {},
-    response.memoryMetadata ?? {},
-    response.initialSetupConversation ?? '',
-  )
-  return secret
+  const existingPlayer = await PlayerInterface.getPlayerData(username)
+
+  if (!existingPlayer) {
+    const secret = generateSecret() // Generate a unique secret for the user
+    await PlayerInterface.insertPlayer(
+      username,
+      '',
+      '#FFFFFF',
+      secret,
+      [0, 0, 0],
+      [0, 0],
+      response.statusMetadata ?? {},
+      response.memoryMetadata ?? {},
+      response.initialSetupConversation ?? '',
+    )
+    return secret
+  } else {
+    const secret = generateSecret() // Generate a new secret to lock out any hackers
+    await PlayerInterface.updateAuth(
+      username,
+      secret,
+      response.initialSetupConversation ?? '',
+    )
+    return secret
+  }
 }
 
 async function handleVerification(

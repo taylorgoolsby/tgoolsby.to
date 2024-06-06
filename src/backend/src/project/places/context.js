@@ -15,14 +15,36 @@ You are part of a larger JavaScript system, and you handle all WebSocket events.
 Always avoid collecting personal information.
 
 You will handle various types of WebSocket events. Each event allows the user to define possible input values.
- 
-  **WebSocket Event Input Values**: 
-  - username?: ?string - The player's username.
-  - secret?: ?string - The player's rights to the username.
-  - chat?: ?Array<{role: string, content: string}> - The player's chat messages.
-  - position?: ?Array<number> - The player is requesting a description of the game world at this position and look direction. This is an array with 3 numbers representing [x, y, z].
-  - lookDirection?: ?Array<number> - This is the direction the player is looking in. This is an array representing [0/360 rh xy angle, -90/90 azimuth], meaning, the first number is the angle in the xy plane, and the second number is the azimuth. Both are in degrees. So [90, 90] represents looking straight down the z-axis with y-up.
-  - cardId?: ?string - If the player plays a card, this is the card's ID.
+
+Every completion call you receive will have the following structure:
+
+  **Request Context**:
+  {
+    request: {
+      ip: string, // the user's IP address
+      path: string, // the request path
+      username: string, // the player's name
+      isUsernameAvailable: boolean, // indicates if the username is available
+      isUsernameAuthenticated: boolean, // indicates if the player is authenticated
+      requestedPosition: string, // The player is requesting a description of the game world at this position. This is an array with 3 integers representing [x, y, z]. The game world is 2D, so z is always 0. [0, 0, 0] represents the origin. The origin is where new players start. The origin is spawn. Under normal movement, the player position may change by only 1 unit in any direction.
+      userChatLog: Array<string>, // the player's chat messages
+      cardId: string, // If the player plays a card, this is the card's ID.
+    },
+    playerData: { // The following is authenticated player data:
+      status: string, // the player's status
+      color: string, // the player's color
+      currentPosition: string, // the player's current position
+      currentPositionDescription: string, // the text description of the world at the player's current position.
+      statusMetadata: string, // the player's status metadata
+      memoryMetadata: string, // the player's memory metadata
+      initialSetupConversation: ?string, // the player's initial setup conversation
+    },
+    global: { // The following is information about the game world in general:
+      globalChatLog: Array<string>,
+      globalEventLog: Array<string>,
+      currentTime: string,
+    },
+  }
   
 For each event, you must determine the user's intent and respond accordingly:
 
@@ -31,7 +53,7 @@ For each event, you must determine the user's intent and respond accordingly:
   2. **Movement**: Changes in the player's position signify movement. Verify the new position is valid and update the game state. Cap the player's velocity if it exceeds the max velocity.
   3. **Rotation**: Change the player's look direction. Verify the new direction is valid and update the game state.
   4. **Status Update**: Change the player's status. Ensure the new status is properly recorded.
-  5. **Verification Details**: Update the player's verification details. Handle securely and update the database.
+  5. **Verification Details**: Update the player's verification details. Handle securely and update the database. If the player asks, redo the initial setup conversation and when you are complete, submit it via the initialSetupConversation output.
   6. **Change Name**: Re-log into a different account. Require verification again.
   7. **API Call List**: When the client sends an empty event, return a list of available API calls.
   8. **Play Card**: When the client sends an event to play a card, verify the cardId and attach the card to the current position.
@@ -155,6 +177,7 @@ export type RequestContext = {
   global: {
     globalChatLog: Array<string>,
     globalEventLog: Array<string>,
+    currentTime: string,
   },
 }
 
@@ -178,6 +201,10 @@ function makeUserMessage(context: RequestContext) {
       
       // If there is an error, set errorReason to the error message.
       errorReason: ?string,
+      
+      // The position in the world the textDescription is for.
+      // This is an array of three integers representing [x, y, z]. For example, [0, 0, 0]. Negative integers are allowed.
+      position: ?Array<number>,
       
       // To generate a description of the game world at the requestedPosition, set textDescription.
       textDescription: ?string,
@@ -275,6 +302,7 @@ export async function prepareContext(
     global: {
       globalChatLog: await getGlobalChatLog(),
       globalEventLog: [],
+      currentTime: new Date().toISOString(),
     },
   }
 
@@ -299,6 +327,7 @@ export type MainAgentResponse = {
   chatMessage: ?string,
   errorReason: ?string,
   textDescription: ?string,
+  position: ?Array<number>,
   initialSetupConversation: ?string,
   verificationConversation: ?string,
   intendedUsername: ?string,

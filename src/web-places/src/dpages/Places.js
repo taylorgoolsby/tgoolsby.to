@@ -101,11 +101,15 @@ export const topLevelClassName: string = css`
     flex-shrink: 0;
   }
 
+  .image {
+  }
+
   .panel {
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.9);
     align-self: stretch;
     flex: 1;
-    /*max-width: 600px;*/
+    max-width: 450px;
+    color: white;
   }
 
   .chatWindow {
@@ -215,6 +219,13 @@ const Image: any = (props) => {
             {
               text: textDescription,
             },
+            {
+              text: 'anime',
+            },
+            {
+              text: 'blurry bad',
+              weight: -1,
+            },
           ],
           cfg_scale: 7,
           height: 1024,
@@ -243,34 +254,66 @@ const Image: any = (props) => {
   return (
     <View
       style={{
-        aspectRatio: 1,
         alignSelf: 'stretch',
-        alignItems: 'center',
+        flex: 1,
+        flexDirection: 'row',
         justifyContent: 'center',
+        backgroundColor: 'black',
       }}
     >
-      {image ? (
-        <img
-          src={image}
-          alt={textDescription}
-          style={{ width: '100%', height: '100%' }}
-        />
-      ) : null}
-      <Text style={{ position: 'absolute', top: 0, left: 0 }}>
-        {JSON.stringify(position)}
-      </Text>
-      <Text
+      <View
         style={{
           position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          color: 'white',
-          padding: 12,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
         }}
       >
-        {textDescription}
+        {image ? (
+          <img
+            src={image}
+            alt={textDescription}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              filter: 'blur(3px) grayscale(0%) brightness(0.5)',
+            }}
+          />
+        ) : null}
+      </View>
+      <View
+        style={{
+          aspectRatio: 1,
+          alignSelf: 'stretch',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {image ? (
+          <img
+            src={image}
+            alt={textDescription}
+            style={{ width: '100%', height: '100%' }}
+          />
+        ) : null}
+        <Text
+          style={{
+            position: 'absolute',
+            top: '76%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            color: 'white',
+            padding: 12,
+          }}
+        >
+          {textDescription}
+        </Text>
+      </View>
+      <Text style={{ position: 'absolute', top: 0, left: 0, color: 'white' }}>
+        {JSON.stringify(position)}
       </Text>
     </View>
   )
