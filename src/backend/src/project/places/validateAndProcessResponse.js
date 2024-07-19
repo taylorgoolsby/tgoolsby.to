@@ -6,6 +6,15 @@ import ErrorInterface from './schema/Error/ErrorInterface.js'
 import ChatCompletion from './rest/ChatCompletion.js'
 import type { MainAgentResponse, UserEvent } from './context.js'
 import MessageInterface from './schema/Message/MessageInterface.js'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+const s3 = new S3Client({
+  region: 'us-east-2',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 export async function validateAndProcessResponse(
   response: MainAgentResponse,
@@ -38,6 +47,9 @@ export async function validateAndProcessResponse(
       throw new Error('Unexpected status code in response')
   }
 
+
+
+
   // Process memory metadata if present
   const username = event.username
   if (username) {
@@ -45,12 +57,21 @@ export async function validateAndProcessResponse(
       await MessageInterface.insert(username, 'assistant', response.chatMessage)
     }
 
-    if (response.textDescription && response.position) {
-      await DescriptionInterface.storeOrUpdateTextDescription(
-        response.position,
-        [90, 90],
-        response.textDescription,
-      )
+    const textDescription = response.textDescription
+    const position = response.position
+    if (textDescription && position) {
+      const existingDescription = await DescriptionInterface.get(response.position[0], response.position[1], response.position[2])
+      if (existingDescription) {
+        await DescriptionInterface.update(
+          position,
+          textDescription,
+        )
+      } else {
+        await DescriptionInterface.insert(
+          position,
+          textDescription,
+        )
+      }
     }
 
     if (response.statusMetadata) {
@@ -66,5 +87,79 @@ export async function validateAndProcessResponse(
         response.memoryMetadata,
       )
     }
+  }
+}
+
+async function generateImage(textDescription: string) {
+  const engineId = 'stable-diffusion-xl-1024-v1-0'
+  const apiHost = 'https://api.stability.ai'
+  const apiKey = 'sk-GHtkeJBKQa7TClVDyitlxetZNsLcnFlyghpNbivN4pwO82a8'
+
+  if (!apiKey) throw new Error('Missing Stability API key.')
+
+  const response = await fetch(
+    `${apiHost}/v1/generation/${engineId}/text-to-image`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        text_prompts: [
+          {
+            text: textDescription,
+          },
+          {
+            text: 'anime',
+          },
+          {
+            text: 'blurry bad beings',
+            weight: -1,
+          },
+        ],
+        cfg_scale: 7,
+        height: 1024,
+        width: 1024,
+        steps: 30,
+        samples: 1,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(`Non-200 response: ${await response.text()}`)
+  }
+
+  const responseJSON = await response.json()
+  const imageBase64 = responseJSON.artifacts[0].base64
+
+  // Decode the base64 image
+  const buffer = Buffer.from(imageBase64, 'base64');
+  return buffer
+}
+
+async function generateAndSaveImage(text: string) {
+  const imageBuffer = await generateImage(text)
+
+  // Upload to S3
+  const bucketName = process.env.S3_BUCKET_NAME;
+  const key = `generated-images/${Date.now()}.png`;
+
+  const params = {
+    Bucket: bucketName,
+    Key: key,
+    Body: buffer,
+    ContentEncoding: 'base64', // required
+    ContentType: 'image/png', // required
+  };
+
+  try {
+    await s3.upload(params).promise();
+    console.log(`Image successfully uploaded to ${bucketName}/${key}`);
+    return `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  } catch (error) {
+    throw new Error(`Error uploading image to S3: ${error.message}`);
   }
 }

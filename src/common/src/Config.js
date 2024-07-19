@@ -178,7 +178,7 @@ class Config {
   static cipherKey: string = nonMaybe(CIPHER_KEY)
 
   static awsConfig: typeof awsConfig = awsConfig
-  static awsResourceBaseName: string = awsResourceBaseName
+  static awsResourceBaseName: string = 'places-tgoolsby'
   static awsUploadBucketName: string = `${awsResourceBaseName}-upload-${stage}`
 }
 

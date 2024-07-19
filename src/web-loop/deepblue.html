@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animated Kelp Leaf</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #87ceeb;
+    }
+  </style>
+</head>
+<body>
+<svg width="200" height="400" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+  <path id="kelp-leaf" fill="green" d="M100,50 C90,150 90,250 100,350 C110,250 110,150 100,50 Z" />
+</svg>
+
+<script>
+  const kelpLeaf = document.getElementById('kelp-leaf');
+
+  function animateLeaf() {
+    const baseX = 100; // The base x-coordinate for the top and bottom points of the leaf
+    const baseY1 = 50; // The base y-coordinate for the top point of the leaf
+    const baseY2 = 350; // The base y-coordinate for the bottom point of the leaf
+    const amplitude = 20; // The maximum deviation from the base x-coordinate
+    const frequency = 0.005; // The frequency of the wave
+    const baseControlY1 = 150; // The base y-coordinate for the top control point
+    const baseControlY2 = 250; // The base y-coordinate for the bottom control point
+
+    let t = 0;
+
+    function animate() {
+      t += 1;
+      const endX1 = baseX + amplitude * Math.sin(frequency * t);
+      const endX2 = baseX - amplitude * Math.sin(frequency * t);
+
+      // Control points for the Bezier curves
+      const controlX1 = (endX1 + baseX) / 2 + amplitude * Math.cos(frequency * t);
+      const controlX2 = (endX2 + baseX) / 2 - amplitude * Math.cos(frequency * t);
+      const controlY1 = baseControlY1 + (baseY1 + baseY2) / 2 * Math.cos(frequency * t) / 2;
+      const controlY2 = baseControlY2 - (baseY1 + baseY2) / 2 * Math.cos(frequency * t) / 2;
+
+      kelpLeaf.setAttribute('d', `M${baseX},${baseY1} C${controlX1},${controlY1} ${controlX1},${controlY2} ${endX1},${baseY2} C${controlX2},${controlY2} ${controlX2},${controlY1} ${baseX},${baseY1} Z`);
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  }
+
+  animateLeaf();
+</script>
+</body>
+</html>

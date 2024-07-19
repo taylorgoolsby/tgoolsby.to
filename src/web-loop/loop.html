@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Superconducting Loop Simulation</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+    button { margin: 5px; }
+    input { margin: 5px; width: 50px; }
+  </style>
+</head>
+<body>
+<div style="position: absolute; top: 10px; left: 10px; z-index: 10;">
+  <button onclick="setJunctions(0)">0 Junctions</button>
+  <button onclick="setJunctions(1)">1 Junction</button>
+  <button onclick="setJunctions(2)">2 Junctions</button>
+  <button onclick="setJunctions(3)">3 Junctions</button>
+  <br>
+  <label for="turnsInput">Turns (n):</label>
+  <input type="number" id="turnsInput" value="1" min="1" onchange="updateTurns()">
+  <br>
+  <label for="radiusInput">Loop Radius (in Planck lengths):</label>
+  <input type="range" id="radiusInput" value="5" min="1" onchange="updateRadius()" style="width:240px;">
+</div>
+<canvas id="canvas"></canvas>
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const planckLength = 1; // Planck length in meters
+  let radius = 5 * planckLength; // in pixels (5 Planck lengths)
+  let spiralRadius = 30; // in pixels
+  let junctions = 0;
+  let rotationX = Math.PI; // 180 degrees rotation about X-axis
+  let rotationY = 0;
+  let isDragging = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+  let velocityX = 0;
+  let velocityY = 0;
+  let n = 1; // Number of turns
+  let zoom = 1; // Zoom factor
+
+  // Constants
+  const h = 6.626e-34; // Planck's constant in Js
+  const m = 9.11e-31; // Mass of electron in kg
+  const pixelToMeter = 1e-6; // Conversion from pixels to meters
+
+  function updateTurns() {
+    n = parseInt(document.getElementById('turnsInput').value);
+    draw();
+  }
+
+  function updateRadius() {
+    let newRadiusInPlanck = parseInt(document.getElementById('radiusInput').value);
+    radius = newRadiusInPlanck * planckLength; // Convert to pixels
+    console.log('radius', radius)
+    draw();
+  }
+
+  function calculateEnergy() {
+    // Calculate circumference L
+    const L = 2 * Math.PI * radius * pixelToMeter; // in meters
+
+    // Calculate energy E_n
+    const E_n = (Math.pow(n * h, 2)) / (8 * m * Math.pow(L, 2));
+
+    // Convert energy to electron volts (1 eV = 1.60218e-19 J)
+    const E_n_eV = E_n / 1.60218e-19;
+
+    return { E_n, E_n_eV };
+  }
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    draw();
+  }
+
+  function rotate(point, angleX, angleY) {
+    // Rotation around X-axis
+    let cosX = Math.cos(angleX);
+    let sinX = Math.sin(angleX);
+    let y = point.y * cosX - point.z * sinX;
+    let z = point.y * sinX + point.z * cosX;
+
+    // Rotation around Y-axis
+    let cosY = Math.cos(angleY);
+    let sinY = Math.sin(angleY);
+    let x = point.x * cosY - z * sinY;
+    z = point.x * sinY + z * cosY;
+
+    return { x: x, y: y, z: z };
+  }
+
+  function drawLoop() {
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const angle = (i / 100) * Math.PI * 2;
+      let point = { x: radius * Math.cos(angle), y: 0, z: radius * Math.sin(angle) };
+      point = rotate(point, rotationX, rotationY);
+      if (i === 0) {
+        ctx.moveTo(canvas.width / 2 + point.x * zoom, canvas.height / 2 + point.y * zoom);
+      } else {
+        ctx.lineTo(canvas.width / 2 + point.x * zoom, canvas.height / 2 + point.y * zoom);
+      }
+    }
+    ctx.strokeStyle = 'green';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function drawSpiralLoop() {
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const angle = (i / 100) * Math.PI * 2;
+      const u = Math.cos(n * angle); // example u component
+      const v = Math.sin(n * angle); // example v component
+      let point = {
+        x: (radius + spiralRadius * u) * Math.cos(angle),
+        y: spiralRadius * v,
+        z: (radius + spiralRadius * u) * Math.sin(angle)
+      };
+      point = rotate(point, rotationX, rotationY);
+      if (i === 0) {
+        ctx.moveTo(canvas.width / 2 + point.x * zoom, canvas.height / 2 + point.y * zoom);
+      } else {
+        ctx.lineTo(canvas.width / 2 + point.x * zoom, canvas.height / 2 + point.y * zoom);
+      }
+    }
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function drawJunctions() {
+    for (let i = 0; i < junctions; i++) {
+      const angle = (i / junctions) * Math.PI * 2;
+      let point = { x: radius * Math.cos(angle), y: 0, z: radius * Math.sin(angle) };
+      point = rotate(point, rotationX, rotationY);
+
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2 + point.x * zoom, canvas.height / 2 + point.y * zoom, 5 * zoom, 0, Math.PI * 2);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+    }
+  }
+
+  function drawAxes() {
+    const axisLength = 10; // Smaller axes
+
+    const xAxis = { x: axisLength, y: 0, z: 0 };
+    const yAxis = { x: 0, y: axisLength, z: 0 };
+    const zAxis = { x: 0, y: 0, z: axisLength };
+
+    const rotatedXAxis = rotate(xAxis, rotationX, rotationY);
+    const rotatedYAxis = rotate(yAxis, rotationX, rotationY);
+    const rotatedZAxis = rotate(zAxis, rotationX, rotationY);
+
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, canvas.height / 2);
+    ctx.lineTo(canvas.width / 2 + rotatedXAxis.x * zoom, canvas.height / 2 + rotatedXAxis.y * zoom);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, canvas.height / 2);
+    ctx.lineTo(canvas.width / 2 + rotatedYAxis.x * zoom, canvas.height / 2 + rotatedYAxis.y * zoom);
+    ctx.strokeStyle = 'green';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, canvas.height / 2);
+    ctx.lineTo(canvas.width / 2 + rotatedZAxis.x * zoom, canvas.height / 2 + rotatedZAxis.y * zoom);
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function drawEquation() {
+    const energy = calculateEnergy();
+    const offsetX = canvas.width - 300; // Position on the right side
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText(`E_n = ${energy.E_n.toExponential(3)} J`, offsetX, 40);
+    ctx.fillText(`E_n = ${energy.E_n_eV.toExponential(3)} eV`, offsetX, 70);
+    ctx.fillText('n: Number of spiraling turns', offsetX, 100);
+  }
+
+  function draw() {
+    // clear to black
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawLoop();
+    drawSpiralLoop();
+    drawJunctions();
+    drawAxes();
+    drawEquation();
+  }
+
+  function setJunctions(number) {
+    junctions = number;
+    draw();
+  }
+
+  function onMouseDown(event) {
+    isDragging = true;
+    lastMouseX = event.clientX;
+    lastMouseY = event.clientY;
+    velocityX = 0;
+    velocityY = 0;
+  }
+
+  function onMouseMove(event) {
+    if (isDragging) {
+      const deltaX = event.clientX - lastMouseX;
+      const deltaY = event.clientY - lastMouseY;
+      rotationY += deltaX * 0.01;
+      rotationX += deltaY * 0.01;
+      lastMouseX = event.clientX;
+      lastMouseY = event.clientY;
+      velocityX = deltaX * 0.01;
+      velocityY = deltaY * 0.01;
+      draw();
+    }
+  }
+
+  function onMouseUp() {
+    isDragging = false;
+  }
+
+  function onWheel(event) {
+    if (event.deltaY < 0) {
+      zoom *= 1.1;
+    } else {
+      zoom /= 1.1;
+    }
+    draw();
+  }
+
+  function animate() {
+    if (!isDragging) {
+      rotationY += velocityX;
+      rotationX += velocityY;
+      // velocityX *= 0.95; // Damping
+      // velocityY *= 0.95; // Damping
+      draw();
+    }
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup', onMouseUp);
+  canvas.addEventListener('mouseout', onMouseUp);
+  canvas.addEventListener('wheel', onWheel);
+
+  resizeCanvas();
+  animate();
+
+  // Initial draw
+  setJunctions(0);
+</script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import ChatCompletion from './rest/ChatCompletion.js'
 import type { PlayerSQL } from './schema/Player/PlayerSQL.js'
 import MessageInterface from './schema/Message/MessageInterface.js'
 import PlayerInterface from './schema/Player/PlayerInterface.js'
+import DescriptionInterface from "./schema/Description/DescriptionInterface.js";
 
 function makeSystemMessage() {
   return `You are an AI responsible for managing a multiplayer text-based adventure game. 
@@ -39,7 +40,7 @@ Every completion call you receive will have the following structure:
       memoryMetadata: string, // the player's memory metadata
       initialSetupConversation: ?string, // the player's initial setup conversation
     },
-    global: { // The following is information about the game world in general:
+    world: { // The following is information about the game world in general:
       globalChatLog: Array<string>,
       globalEventLog: Array<string>,
       currentTime: string,
@@ -131,6 +132,11 @@ Some completion calls you receive will be for unauthenticated players, some will
   **Card Issuance**: Remember the last 100 cards issued globally. Issue cards in a way that is fair to all players. Consider the global card issuance history to ensure fair distribution of new cards.
 
   **Handling Missing Information**: If event payloads are missing information, attempt to get the missing information from the last 100 lines of chat history. If still incomplete, prompt the user for the missing information. This is associated with fulfilling user intents, and fulfilling user intents means making database changes initiated by your output. Be aware that some of the fields you output directly affect the MySQL database.
+  
+  **Handling Movement**:
+  - Under normal movement, players can only move 1 tile at a time, not diagonally. 
+  - If the player requests a description for a location which is beyond what they are allowed to move, instead, you may instead give them a description for a location which they could have reached, but in the same direction. In this case, you would set the output position to a value different than what they requested.
+  - If the playerData.currentDescription shows that the player is in a town or confined space, then moving 1 tile should cause them to move a small amount. If they are in a large open field, then moving 1 tile should move them a far distance. Focus on scene transitions more than the actual distance moved. 
 
 Status codes and their expected data:
 - 200: Success. Represents that the player's requestedPosition is allowed. Must include textDescription.
@@ -174,10 +180,11 @@ export type RequestContext = {
     memoryMetadata: string,
     initialSetupConversation: ?string,
   },
-  global: {
+  world: {
     globalChatLog: Array<string>,
     globalEventLog: Array<string>,
     currentTime: string,
+    existingDescriptionForRequestedPosition: ?string,
   },
 }
 
@@ -275,6 +282,9 @@ export async function prepareContext(
     }
   }
 
+  const requestedPosition = event.position || [0, 0, 0]
+  const existingDescription = await DescriptionInterface.get(requestedPosition[0], requestedPosition[1], requestedPosition[2])
+
   // Prepare the context based on the event and socket data
   const context: RequestContext = {
     request: {
@@ -283,7 +293,7 @@ export async function prepareContext(
       username: event.username || '',
       isUsernameAvailable,
       isUsernameAuthenticated,
-      requestedPosition: JSON.stringify(event.position || [0, 0, 0]),
+      requestedPosition: JSON.stringify(requestedPosition),
       // lookDirection: JSON.stringify([90, 90]),
       userChatLog:
         event.chat?.map((message) => `${message.role}: ${message.content}`) ??
@@ -299,10 +309,11 @@ export async function prepareContext(
       memoryMetadata: playerData?.memoryMetadata || JSON.stringify({}),
       initialSetupConversation,
     },
-    global: {
+    world: {
       globalChatLog: await getGlobalChatLog(),
       globalEventLog: [],
       currentTime: new Date().toISOString(),
+      existingDescriptionForRequestedPosition: existingDescription?.text ?? ''
     },
   }
 

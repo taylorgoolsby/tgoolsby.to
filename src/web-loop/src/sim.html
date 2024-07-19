@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Gravity Simulation</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const G = 10; // Gravitational constant
+  const numParticles = 1000;
+  const particles = [];
+  const camera = {
+    phi: Math.PI / 4,
+    theta: Math.PI / 4,
+    distance: 1000,
+    vPhi: 0,
+    vTheta: 0
+  };
+  let isDragging = false;
+  let lastMouseX, lastMouseY;
+
+  // Particle class
+  class Particle {
+    constructor(x, y, z, mass) {
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      this.vx = 0;
+      this.vy = 0;
+      this.vz = 0;
+      this.mass = mass;
+    }
+
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.z += this.vz;
+    }
+
+    applyForce(fx, fy, fz) {
+      this.vx += fx / this.mass;
+      this.vy += fy / this.mass;
+      this.vz += fz / this.mass;
+    }
+  }
+
+  // Helper function to generate a Gaussian distributed value
+  function gaussianRandom(mean = 0, stdev = 1) {
+    let u = 1 - Math.random();
+    let v = 1 - Math.random();
+    let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    return z * stdev + mean;
+  }
+
+  // Initialize particles in a 3D Gaussian distribution
+  for (let i = 0; i < numParticles; i++) {
+    particles.push(new Particle(
+      gaussianRandom(0, 50),
+      gaussianRandom(0, 50),
+      gaussianRandom(0, 50),
+      Math.random() * 5 + 1
+    ));
+  }
+
+  // Barnes-Hut Tree Node
+  class Node {
+    constructor(x, y, z, size) {
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      this.size = size;
+      this.mass = 0;
+      this.centerOfMass = { x: 0, y: 0, z: 0 };
+      this.particles = [];
+      this.children = [];
+    }
+
+    insert(particle) {
+      if (this.particles.length < 1 && this.size > 1) {
+        this.particles.push(particle);
+        this.updateCenterOfMass();
+      } else {
+        if (this.children.length === 0) this.subdivide();
+        for (let child of this.children) {
+          if (child.contains(particle)) {
+            child.insert(particle);
+            break;
+          }
+        }
+      }
+    }
+
+    contains(particle) {
+      return (particle.x >= this.x && particle.x < this.x + this.size &&
+        particle.y >= this.y && particle.y < this.y + this.size &&
+        particle.z >= this.z && particle.z < this.z + this.size);
+    }
+
+    subdivide() {
+      const halfSize = this.size / 2;
+      for (let i = 0; i < 8; i++) {
+        const x = this.x + (i & 1 ? halfSize : 0);
+        const y = this.y + (i & 2 ? halfSize : 0);
+        const z = this.z + (i & 4 ? halfSize : 0);
+        this.children.push(new Node(x, y, z, halfSize));
+      }
+    }
+
+    updateCenterOfMass() {
+      if (this.particles.length === 1) {
+        const p = this.particles[0];
+        this.centerOfMass = { x: p.x, y: p.y, z: p.z };
+        this.mass = p.mass;
+      } else {
+        let totalMass = 0;
+        let x = 0, y = 0, z = 0;
+        for (let p of this.particles) {
+          totalMass += p.mass;
+          x += p.x * p.mass;
+          y += p.y * p.mass;
+          z += p.z * p.mass;
+        }
+        this.mass = totalMass;
+        this.centerOfMass = { x: x / totalMass, y: y / totalMass, z: z / totalMass };
+      }
+    }
+
+    calculateForce(particle, theta = 0.5) {
+      if (this.particles.length === 1 && this.particles[0] !== particle) {
+        const dx = this.centerOfMass.x - particle.x;
+        const dy = this.centerOfMass.y - particle.y;
+        const dz = this.centerOfMass.z - particle.z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const force = G * this.mass * particle.mass / (distance * distance);
+        particle.applyForce(force * dx / distance, force * dy / distance, force * dz / distance);
+      } else {
+        const dx = this.centerOfMass.x - particle.x;
+        const dy = this.centerOfMass.y - particle.y;
+        const dz = this.centerOfMass.z - particle.z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (this.size / distance < theta) {
+          const force = G * this.mass * particle.mass / (distance * distance);
+          particle.applyForce(force * dx / distance, force * dy / distance, force * dz / distance);
+        } else {
+          for (let child of this.children) {
+            if (child.particles.length > 0) {
+              child.calculateForce(particle, theta);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function simulate() {
+    const root = new Node(-500, -500, -500, 1000);
+    for (let p of particles) {
+      root.insert(p);
+    }
+    for (let p of particles) {
+      root.calculateForce(p);
+      p.update();
+    }
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Render XYZ axes
+    renderAxis(0, 0, 0, 200, 0, 0, 'red');   // X-axis
+    renderAxis(0, 0, 0, 0, 200, 0, 'green'); // Y-axis
+    renderAxis(0, 0, 0, 0, 0, 200, 'blue');  // Z-axis
+
+    // Render particles
+    for (let p of particles) {
+      const screenPos = project(p.x, p.y, p.z);
+      ctx.beginPath();
+      // transparent color based on distance from center
+      // const distance = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+      // const alpha = Math.max(0.1, Math.min(1, 1 - distance / 200));
+      // ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+      ctx.fillStyle = `rgba(0, 0, 0, 0.3)`;
+      ctx.arc(screenPos.x, screenPos.y, 2, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  }
+
+  function project(x, y, z) {
+    const { phi, theta, distance } = camera;
+    const sinPhi = Math.sin(phi);
+    const cosPhi = Math.cos(phi);
+    const sinTheta = Math.sin(theta);
+    const cosTheta = Math.cos(theta);
+
+    // Rotate around Y-axis (phi) and X-axis (theta)
+    const xRot = cosPhi * x + sinPhi * z;
+    const yRot = sinTheta * (sinPhi * x - cosPhi * z) + cosTheta * y;
+    const zRot = cosTheta * (sinPhi * x - cosPhi * z) - sinTheta * y;
+
+    // Perspective projection
+    const scale = distance / (distance + zRot);
+    const newX = xRot * scale + canvas.width / 2;
+    const newY = yRot * scale + canvas.height / 2;
+
+    return { x: newX, y: newY };
+  }
+
+  function renderAxis(x0, y0, z0, x1, y1, z1, color) {
+    const start = project(x0, y0, z0);
+    const end = project(x1, y1, z1);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = color;
+    ctx.stroke();
+  }
+
+  function loop() {
+    simulate();
+    render();
+    updateCamera();
+    requestAnimationFrame(loop);
+  }
+
+  function updateCamera() {
+    camera.phi += camera.vPhi;
+    camera.theta += camera.vTheta;
+
+    // camera.vPhi *= 0.95; // Damping for momentum
+    // camera.vTheta *= 0.95;
+
+    const sinTheta = Math.sin(camera.theta);
+    const cosTheta = Math.cos(camera.theta);
+    const sinPhi = Math.sin(camera.phi);
+    const cosPhi = Math.cos(camera.phi);
+
+    camera.x = camera.distance * sinTheta * cosPhi;
+    camera.y = camera.distance * cosTheta;
+    camera.z = camera.distance * sinTheta * sinPhi;
+  }
+
+  function onMouseDown(event) {
+    isDragging = true;
+    lastMouseX = event.clientX;
+    lastMouseY = event.clientY;
+  }
+
+  function onMouseMove(event) {
+    if (isDragging) {
+      const dx = event.clientX - lastMouseX;
+      const dy = event.clientY - lastMouseY;
+
+      camera.vPhi = dx * 0.005;
+      camera.vTheta = dy * 0.005;
+
+      lastMouseX = event.clientX;
+      lastMouseY = event.clientY;
+    }
+  }
+
+  function onMouseUp() {
+    isDragging = false;
+  }
+
+  function onMouseWheel(event) {
+    camera.distance += event.deltaY * 0.1;
+    camera.distance = Math.max(100, Math.min(camera.distance, 2000)); // Limit zoom range
+  }
+
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup', onMouseUp);
+  canvas.addEventListener('wheel', onMouseWheel);
+
+  loop();
+</script>
+</body>
+</html>
