@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Taylor Goolsby</title>
+  <meta property="og:title" content="Taylor Goolsby" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://tgoolsby.to" />
+  <meta
+    property="og:image"
+    content="https://s3.us-east-2.amazonaws.com/tgoolsby.to/preview.jpg"
+  />
+  <meta property="og:description" content="Taylor's Resume" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@tay2win" />
+  <meta name="twitter:creator" content="@tay2win" />
+  <meta name="twitter:title" content="Taylor Goolsby" />
+  <meta name="twitter:description" content="Taylor's Resume" />
+  <meta
+    name="twitter:image"
+    content="https://s3.us-east-2.amazonaws.com/tgoolsby.to/preview.jpg"
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
+  <style>
+    html {
+
+    }
+
+    body {
+      font-family: "Montserrat", sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #333;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      max-width: 100vw;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: -1;
+      filter: contrast(1.1) grayscale(50%) brightness(0.7);
+      -webkit-filter: contrast(1.1) grayscale(50%) brightness(0.7);
+      user-select: none;
+    }
+
+    .me {
+      width: 200px;
+      height: 200px;
+      max-width: 200px;
+      max-height: 200px;
+      border-radius: 100px;
+      overflow: hidden;
+      margin: 20px 0;
+      position: relative;
+
+      > img {
+        position: absolute;
+        top: 186px;
+        left: 144px;
+        transform: translate(-50%, -50%) scale(0.13);
+        user-select: none;
+      }
+    }
+
+    .landing-wrap {
+      color: #fff;
+      width: 100vw;
+      max-width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .landing-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      top: -59px;
+    }
+
+    .resume-wrap {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-self: center;
+      padding: 40px 0 100px;
+
+      > div {
+        backdrop-filter: blur(40px) brightness(0.5);
+        -webkit-backdrop-filter: blur(40px) brightness(0.5);
+        border-radius: 20px;
+        align-self: stretch;
+        padding: 10px 39px 24px;
+      }
+    }
+
+    a {
+      color: #abf;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .resume-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: opacity 0.3s ease-out;
+      position: relative;
+
+      /*&:hover {*/
+      &::after {
+        content: '';
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        border: 1px solid transparent;
+        width: 8px;
+        height: 8px;
+        transform: translate(-50%, -50%) rotate(45deg);
+        border-bottom: 1px solid white;
+        border-right: 1px solid white;
+      }
+      /*}*/
+    }
+
+    .resume-link:active {
+      opacity: 0.2;
+      transition: opacity 0s;
+    }
+
+    h1 {
+      font-size: 44px;
+      margin-left: -3px;
+      white-space: nowrap;
+    }
+
+    h1, h2 {
+      font-family: "Major Mono Display", sans-serif;
+      color: white;
+    }
+
+    h2 {
+      margin-left: -2px;
+      margin-bottom: -10px;
+    }
+
+    h3 {
+      font-weight: 600;
+      margin-top: 24px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    header, section {
+      &:not(:last-child) {
+        margin-bottom: 47px;
+      }
+    }
+
+    @media only screen and (max-width: 600px) {
+      /* CSS rules here will only apply to screens 600px wide or smaller */
+      h1 {
+        font-size: 32px;
+      }
+
+      .resume-wrap {
+        > div {
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+      }
+    }
+
+    @media print {
+      .background {
+        display: none;
+      }
+      .me {
+        display: none;
+      }
+      .resume-wrap {
+        > div {
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+          border-radius: 0;
+          padding: 0;
+        }
+      }
+      h1 {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<img class="background" src="background.jpg"/>
+
+<div class="landing-wrap">
+
+
+  <div class="landing-text">
+    <h1>Taylor Goolsby</h1>
+    <a class="resume-link" onclick="handleResumeClick()" style="text-decoration: none; color: white"><span>Resume</span></a>
+    <!--    <div class="resume-link">-->
+    <!--      -->
+    <!--      <div class="down-caret"></div>-->
+    <!--    </div>-->
+  </div>
+
+</div>
+
+<div class="resume-wrap">
+  <div>
+    <header>
+      <h1>Taylor Goolsby</h1>
+
+      <div class="me">
+        <img src="me.jpg"/>
+      </div>
+
+      <!--      <p>Software Developer | Marina, CA | <a href="https://bento.me/taylorgoolsby" target="_blank" rel="noopener noreferrer">Socials</a> | <a href="https://www.linkedin.com/in/taylorgoolsby" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>-->
+      <p>Software Developer | Marina, CA | 831-521-5634 | tgoolsby2@gmail.com</p>
+    </header>
+
+    <section class="experience">
+      <h2>Professional Experience</h2>
+
+      <h3>Independent Development</h3>
+      <p>Oct 2022 - Now | Marina, CA</p>
+      <ul>
+        <li>Currently working on independent AI research and development at <a href="https://go-wrap.com">go-wrap.com</a>.</li>
+      </ul>
+
+      <h3>Software Developer, PayRecs</h3>
+      <p>Jan 2018 - Sep 2022 | Remote</p>
+      <ul>
+        <li>Architected and developed the initial infrastructure for international payments, ensuring system integrity and flexibility.</li>
+        <li>Architected and developed an integration of PayRecs with Q2, allowing banks to onboard with PayRecs quickly and easily. Integration involved SSO, ETL, SOC 2 compliance, and complex account hierarchies.</li>
+      </ul>
+
+      <h3>Full Stack Web and Mobile Developer, AboveLine</h3>
+      <p>Aug 2016 - Jan 2018 | Remote</p>
+      <ul>
+        <li>Developed web and mobile apps rapidly for multiple startups as a small agency, incorporating features like user sign-up and admin management.</li>
+        <li>Enhanced the development process through research and adoption of new technologies.</li>
+      </ul>
+    </section>
+
+    <section class="projects">
+      <h2>Projects</h2>
+
+      <!-- Minecraft FPV -->
+      <div class="project">
+        <h3>Minecraft FPV</h3>
+        <p>Apr 2020</p>
+        <p>Created a Minecraft mod for FPV drone flight simulation, building and maintaining a community of 1000+ members. The project focused on physically-based simulation and community engagement. <a href="https://minecraftfpv.com" target="_blank" rel="noopener noreferrer">Visit Minecraft FPV</a>.</p>
+      </div>
+    </section>
+
+    <section class="skills">
+      <h2 style="margin-bottom: 13px;">Skills</h2>
+      <p>Languages: JavaScript, TypeScript, SQL, Python, C, C++, Objective-C, Java, C#</p>
+      <p>Frameworks/Libraries: React, React-Native, Next.JS, GraphQL.</p>
+      <p>Tools: AWS, Firebase, WebRTC, Algolia, Docker, AI</p>
+    </section>
+
+    <section class="education">
+      <h2 style="margin-bottom: 13px;">Education</h2>
+      <p><strong>Bachelor of Science - BS, Applied Physics</strong><br>
+        University of California, Davis | 2012 - 2015</p>
+      <p><strong>Minor, Computer Science</strong><br>
+        University of California, Davis | 2012 - 2015</p>
+    </section>
+  </div>
+</div>
+
+</body>
+
+<script type="module">
+
+  function handleResumeClick() {
+    // scroll window to resume-wrap
+    const resumeWrap = document.querySelector('.resume-wrap')
+    resumeWrap.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  window.handleResumeClick = handleResumeClick
+</script>
+
+</html>
